@@ -1,3 +1,10 @@
+## Running Locally
+
+1. Run `npm i` to install dependencies
+1. Run `npm run build:watch` to start the development server
+1. Open `chrome://extensions/` in Chrome and toggle "Developer mode" in the top-right corner
+1. Click "Load unpacked" and select the `build` directory
+
 ## Preparing for a new release in the Chrome Store
 
 _Did you test on Windows?_

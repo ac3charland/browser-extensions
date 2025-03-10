@@ -1,9 +1,9 @@
 {
-    "name": "bookmark-express-next",
+    "name": "bookmark-express",
     "version": "0.1.0",
     "scripts": {
-        "build": "react-scripts build",
-        "build:watch": "cra-build-watch --verbose",
+        "build": "NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
+        "build:watch": "NODE_OPTIONS=--openssl-legacy-provider cra-build-watch --verbose",
         "prep": "bash prep-for-chrome-store.sh",
         "prettier": "prettier --config ./prettier.config.js --write './**/*.{js,json,ts,tsx}'"
     },
