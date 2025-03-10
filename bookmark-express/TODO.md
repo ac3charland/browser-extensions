@@ -1,3 +1,8 @@
+# Before Rerelease
+[ ] Fix Slow Opening
+[ ] Keyboard Navigation
+[ ] Add test coverage
+
 # New Features
 ## Use high-resolution favicons
 I could have a service worker (requires manifest v3) or async task to look through for a manifest or apple icon entry in the document

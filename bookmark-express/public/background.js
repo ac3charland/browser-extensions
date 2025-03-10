@@ -10,3 +10,9 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onStartup.addListener(() => {
   console.log('Browser started, extension ready');
 });
+
+chrome.commands.onCommand.addListener((command) => {
+  if (command === '_execute_action') {
+    chrome.action.openPopup()
+  }
+})
