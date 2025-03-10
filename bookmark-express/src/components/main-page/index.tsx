@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { CircularProgress, Container, makeStyles } from '@material-ui/core'
+import { CircularProgress, Container } from '@mui/material'
+import { styled } from '@mui/material/styles'
 import { Results } from './Results'
 import { SearchBar } from './SearchBar'
 import AppContext from 'context/AppContext'
@@ -12,15 +13,12 @@ interface Props {
     isMetadataStale: boolean
 }
 
-const useStyles = makeStyles({
-    loading: {
-        textAlign: 'center',
-        padding: '10px',
-    },
+const LoadingContainer = styled(Container)({
+    textAlign: 'center',
+    padding: '10px',
 })
 
 export function MainPage({ isMetadataStale }: Props) {
-    const classes = useStyles()
     const context = useAppContext()
     const [isLoading, setIsLoading] = useState<boolean>(true)
 
@@ -58,9 +56,9 @@ export function MainPage({ isMetadataStale }: Props) {
     return (
         <AppContext.Provider value={context}>
             {isLoading && (
-                <Container disableGutters className={classes.loading}>
+                <LoadingContainer disableGutters>
                     <CircularProgress />
-                </Container>
+                </LoadingContainer>
             )}
             {!isLoading && (
                 <Container disableGutters>

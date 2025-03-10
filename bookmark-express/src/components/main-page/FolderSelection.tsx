@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import {
-    Accordion as MuiAccordion,
-    AccordionDetails as MuiAccordionDetails,
-    AccordionSummary as MuiAccordionSummary,
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
     Chip,
     Grid,
-    makeStyles,
     Typography,
-    withStyles,
-} from '@material-ui/core'
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
+} from '@mui/material'
+import { styled } from '@mui/material/styles'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { getFolders, getRecentFolders } from 'utils/misc'
 import { Favorite, Node } from 'react-app-env'
 import { Bookmarks } from 'webextension-polyfill-ts'
@@ -21,90 +20,79 @@ interface Props {
     onFolderSelect: (folder: Node) => void
 }
 
-const Accordion = withStyles({
-    root: {
-        border: '1px solid rgba(0, 0, 0, .125)',
-        boxShadow: 'none',
-        '&:not(:last-child)': {
-            borderBottom: 0,
-        },
-        '&:before': {
-            display: 'none',
-        },
-        '&$expanded': {
-            margin: 'auto',
-        },
+const StyledAccordion = styled(Accordion)({
+    border: '1px solid rgba(0, 0, 0, .125)',
+    boxShadow: 'none',
+    '&:not(:last-child)': {
+        borderBottom: 0,
     },
-    expanded: {},
-})(MuiAccordion)
+    '&:before': {
+        display: 'none',
+    },
+    '&.Mui-expanded': {
+        margin: 'auto',
+    },
+})
 
-const AccordionSummary = withStyles({
-    root: {
-        backgroundColor: 'rgba(0, 0, 0, .03)',
-        borderBottom: '1px solid rgba(0, 0, 0, .125)',
-        sectionSpacing: -1,
+const StyledAccordionSummary = styled(AccordionSummary)({
+    backgroundColor: 'rgba(0, 0, 0, .03)',
+    borderBottom: '1px solid rgba(0, 0, 0, .125)',
+    minHeight: 56,
+    '&.Mui-expanded': {
         minHeight: 56,
-        '&$expanded': {
-            minHeight: 56,
-        },
     },
-    content: {
-        '&$expanded': {
-            margin: '12px 0',
-        },
+    '& .MuiAccordionSummary-content.Mui-expanded': {
+        margin: '12px 0',
     },
-    expanded: {},
-})(MuiAccordionSummary)
+})
 
-const AccordionDetails = withStyles((theme) => ({
-    root: {
-        padding: theme.spacing(2),
-    },
-}))(MuiAccordionDetails)
-
-const useStyles = makeStyles((theme) => ({
-    recentFolders: {
-        display: 'flex',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        '& > *': {
-            margin: theme.spacing(0.5),
-        },
-    },
-    noFavorites: { color: 'gray' },
+const StyledAccordionDetails = styled(AccordionDetails)(({ theme }) => ({
+    padding: theme.spacing(2),
 }))
 
+const StyledRecentFolders = styled('div')(({ theme }) => ({
+    display: 'flex',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    '& > *': {
+        margin: theme.spacing(0.5),
+    },
+}))
+
+const NoFavoritesTypography = styled(Typography)({
+    color: 'gray',
+})
+
 export function FolderSelection({ createDetails, onFolderSelect }: Props) {
-    const classes = useStyles()
     const [recentFolders, setRecentFolders] = useState<Node[]>([])
     const [favorites, setFavorites] = useState<Favorite[]>([])
     const [expanded, setExpanded] = React.useState('')
 
     useEffect(() => {
-        async function stupid() {
+        async function fetchFolders() {
             setRecentFolders(getRecentFolders(await getFolders()))
             setFavorites(await getFavorites())
         }
 
-        stupid()
+        fetchFolders()
     }, [])
 
-    const handleToggleAccordion = (panel: any) => (event: any, isExpanded: any) => {
-        setExpanded(isExpanded ? panel : false)
+    const handleToggleAccordion = (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+        setExpanded(isExpanded ? panel : '')
     }
 
     return (
         <>
-            <Accordion expanded={expanded === 'panel1'} onChange={handleToggleAccordion('panel1')}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <StyledAccordion expanded={expanded === 'panel1'} onChange={handleToggleAccordion('panel1')}>
+                <StyledAccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography>Favorite Folders</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+                </StyledAccordionSummary>
+                <StyledAccordionDetails>
                     {!favorites.length && (
-                        <Grid container justify='center'>
-                            <Typography className={classes.noFavorites}>
+                        <Grid container sx={{ justifyContent: 'center' }}>
+                            <NoFavoritesTypography>
                                 You can add folders to your favorites in the options
-                            </Typography>
+                            </NoFavoritesTypography>
                         </Grid>
                     )}
                     {favorites.map((folder) => (
@@ -115,33 +103,35 @@ export function FolderSelection({ createDetails, onFolderSelect }: Props) {
                             onClick={() => onFolderSelect(folder)}
                         />
                     ))}
-                </AccordionDetails>
-            </Accordion>
+                </StyledAccordionDetails>
+            </StyledAccordion>
 
-            <Accordion expanded={expanded === 'panel2'} onChange={handleToggleAccordion('panel2')}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <StyledAccordion expanded={expanded === 'panel2'} onChange={handleToggleAccordion('panel2')}>
+                <StyledAccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography>Recently Used Folders</Typography>
-                </AccordionSummary>
-                <AccordionDetails className={classes.recentFolders}>
-                    {recentFolders.map((folder) => (
-                        <Chip
-                            key={folder.id}
-                            label={folder.title}
-                            color={folder.id === createDetails.parentId ? 'primary' : 'default'}
-                            onClick={() => onFolderSelect(folder)}
-                        />
-                    ))}
-                </AccordionDetails>
-            </Accordion>
+                </StyledAccordionSummary>
+                <StyledAccordionDetails>
+                    <StyledRecentFolders>
+                        {recentFolders.map((folder) => (
+                            <Chip
+                                key={folder.id}
+                                label={folder.title}
+                                color={folder.id === createDetails.parentId ? 'primary' : 'default'}
+                                onClick={() => onFolderSelect(folder)}
+                            />
+                        ))}
+                    </StyledRecentFolders>
+                </StyledAccordionDetails>
+            </StyledAccordion>
 
-            <Accordion expanded={expanded === 'panel3'} onChange={handleToggleAccordion('panel3')}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <StyledAccordion expanded={expanded === 'panel3'} onChange={handleToggleAccordion('panel3')}>
+                <StyledAccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography>Browse Folders</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+                </StyledAccordionSummary>
+                <StyledAccordionDetails>
                     <BrowseFolders mode='browse' onFolderSelect={onFolderSelect} />
-                </AccordionDetails>
-            </Accordion>
+                </StyledAccordionDetails>
+            </StyledAccordion>
         </>
     )
 }

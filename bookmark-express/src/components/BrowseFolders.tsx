@@ -1,13 +1,14 @@
 import React, { useEffect, useState, MouseEvent } from 'react'
-import { IconButton, makeStyles } from '@material-ui/core'
-import TreeView from '@material-ui/lab/TreeView'
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
-import ChevronRightIcon from '@material-ui/icons/ChevronRight'
-import TreeItem from '@material-ui/lab/TreeItem'
+import { IconButton } from '@mui/material'
+import { styled } from '@mui/material/styles'
+import { TreeView } from '@mui/x-tree-view'
+import { TreeItem } from '@mui/x-tree-view'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { getFolders, isFolder } from 'utils/misc'
 import { Favorite, Node } from 'react-app-env'
-import StarIcon from '@material-ui/icons/Star'
-import StarOutlineIcon from '@material-ui/icons/StarOutline'
+import StarIcon from '@mui/icons-material/Star'
+import StarOutlineIcon from '@mui/icons-material/StarOutline'
 
 interface Props {
     favoriteFolders?: Favorite[]
@@ -15,35 +16,33 @@ interface Props {
     onFolderSelect: (folder: Node, event: MouseEvent<HTMLElement>) => void
 }
 
-const useStyles = makeStyles(() => ({
-    treeView: {
-        width: '100%',
+const StyledTreeView = styled(TreeView)(() => ({
+    width: '100%',
+}))
+
+const StyledTreeItem = styled(TreeItem)(() => ({
+    '& .MuiTreeItem-label': {
+        display: 'flex',
+        alignItems: 'center',
+        minHeight: '40px',
     },
-    treeItem: {
-        '& .MuiTreeItem-label': {
-            display: 'flex',
-            alignItems: 'center',
-            minHeight: '40px',
-        },
-        '&.MuiTreeItem-root.Mui-selected:focus > .MuiTreeItem-content .MuiTreeItem-label': {
-            backgroundColor: '#3f51b5',
-            color: 'white',
-            borderRadius: '4px',
-        }
-    },
+    '&.MuiTreeItem-root.Mui-selected:focus > .MuiTreeItem-content .MuiTreeItem-label': {
+        backgroundColor: '#3f51b5',
+        color: 'white',
+        borderRadius: '4px',
+    }
 }))
 
 export function BrowseFolders({ favoriteFolders = [], mode, onFolderSelect }: Props) {
-    const classes = useStyles()
     const [allFolders, setAllFolders] = useState<Node>()
 
     useEffect(() => {
-        async function stupid() {
+        async function fetchFolders() {
             const folders = await getFolders()
             setAllFolders(folders)
         }
 
-        stupid()
+        fetchFolders()
     }, [])
 
     const renderTree = (node: Node | undefined) => {
@@ -52,14 +51,14 @@ export function BrowseFolders({ favoriteFolders = [], mode, onFolderSelect }: Pr
         const isFolderFavorited = favoriteFolders.some((favorite) => favorite.id === node.id)
 
         return (
-            <TreeItem
+            <StyledTreeItem
                 key={node.id}
                 nodeId={node.id}
                 label={
                     <>
                         {node.title}
                         {mode === 'favorites' && (
-                            <IconButton tabIndex={-1} onClick={(event) => onFolderSelect(node, event)}>
+                            <IconButton tabIndex={-1} onClick={(event: MouseEvent<HTMLElement>) => onFolderSelect(node, event)}>
                                 {isFolderFavorited ? (
                                     <StarIcon fontSize='small' />
                                 ) : (
@@ -69,17 +68,15 @@ export function BrowseFolders({ favoriteFolders = [], mode, onFolderSelect }: Pr
                         )}
                     </>
                 }
-                className={classes.treeItem}
-                onClick={mode === 'browse' ? (event) => onFolderSelect(node, event) : undefined}
+                onClick={mode === 'browse' ? (event: MouseEvent<HTMLElement>) => onFolderSelect(node, event) : undefined}
             >
                 {Array.isArray(node.children) ? node.children.map((node) => renderTree(node)) : null}
-            </TreeItem>
+            </StyledTreeItem>
         )
     }
 
     return (
-        <TreeView
-            className={classes.treeView}
+        <StyledTreeView
             defaultCollapseIcon={<ExpandMoreIcon />}
             defaultExpandIcon={<ChevronRightIcon />}
             defaultExpanded={['0']}
@@ -88,6 +85,6 @@ export function BrowseFolders({ favoriteFolders = [], mode, onFolderSelect }: Pr
             {renderTree(allFolders?.children?.[0])}
             {renderTree(allFolders?.children?.[1])}
             {renderTree(allFolders?.children?.[2])}
-        </TreeView>
+        </StyledTreeView>
     )
 }

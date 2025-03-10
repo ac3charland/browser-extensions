@@ -1,21 +1,19 @@
 import React, { ChangeEvent, useContext } from 'react'
-import { Grid, IconButton, makeStyles, OutlinedInput } from '@material-ui/core'
-import SettingsIcon from '@material-ui/icons/Settings'
+import { Grid, IconButton, OutlinedInput } from '@mui/material'
+import { styled } from '@mui/material/styles'
+import SettingsIcon from '@mui/icons-material/Settings'
 import { browser } from 'webextension-polyfill-ts'
 import AppContext from 'context/AppContext'
 import { isFolder } from 'utils/misc'
-import { Add, History as RecentIcon } from '@material-ui/icons'
+import { Add, History as RecentIcon } from '@mui/icons-material'
 
-const useStyles = makeStyles({
-    search: {
-        '&.Mui-focused fieldset': {
-            borderColor: '#3f51b5 !important',
-        },
+const StyledOutlinedInput = styled(OutlinedInput)({
+    '&.Mui-focused fieldset': {
+        borderColor: '#3f51b5 !important',
     },
 })
 
 export function SearchBar() {
-    const classes = useStyles()
     const context = useContext(AppContext)
 
     const handleSearch = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -50,15 +48,14 @@ export function SearchBar() {
     return (
         <Grid container spacing={1}>
             <Grid item xs={9}>
-                <OutlinedInput
+                <StyledOutlinedInput
                     fullWidth
                     autoFocus
                     placeholder='start typing'
                     onChange={handleSearch}
-                    className={classes.search}
                 />
             </Grid>
-            <Grid item xs={3} container justify='center' alignItems='center'>
+            <Grid item xs={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <IconButton title='Bookmark Current Page' tabIndex={-1} onClick={handleBookmarkCurrentPage}>
                     <Add />
                 </IconButton>

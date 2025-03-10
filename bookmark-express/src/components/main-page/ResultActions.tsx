@@ -1,6 +1,6 @@
 import React, { MouseEvent, useContext } from 'react'
-import { IconButton, Menu, MenuItem } from '@material-ui/core'
-import MoreHorizIcon from '@material-ui/icons/MoreHoriz'
+import { IconButton, Menu, MenuItem } from '@mui/material'
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import AppContext from 'context/AppContext'
 import { saveMetadata } from 'utils/storage'
 import { Metadata } from 'utils/metadata'

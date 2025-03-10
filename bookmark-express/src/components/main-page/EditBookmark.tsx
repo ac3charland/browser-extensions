@@ -1,33 +1,27 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
-import { Avatar, Button, Grid, InputAdornment, makeStyles, Paper, TextField } from '@material-ui/core'
+import { Avatar, Button, Grid, InputAdornment, Paper, TextField } from '@mui/material'
+import { styled } from '@mui/material/styles'
 import { Bookmarks, browser, Tabs } from 'webextension-polyfill-ts'
 import { FolderSelection } from './FolderSelection'
 import { Node } from 'react-app-env'
 
-const useStyles = makeStyles((theme) => ({
-    input: {
-        '&.Mui-focused fieldset': {
-            borderColor: '#3f51b5 !important',
-        },
+const StyledTextField = styled(TextField)(({ theme }) => ({
+    '&.Mui-focused fieldset': {
+        borderColor: '#3f51b5 !important',
     },
-    sectionSpacing: {
-        marginBottom: theme.spacing(2),
-    },
-    paper: {
-        marginTop: theme.spacing(1),
-        padding: theme.spacing(2),
-    },
-    heading: {
-        paddingBottom: theme.spacing(1),
-    },
-    subHeading: {
-        padding: theme.spacing(1, 0.5),
-        fontSize: '1.2rem',
-    },
+    marginBottom: theme.spacing(2),
+}))
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+    marginTop: theme.spacing(1),
+    padding: theme.spacing(2),
+}))
+
+const SectionContainer = styled('div')(({ theme }) => ({
+    marginBottom: theme.spacing(2),
 }))
 
 export function EditBookmark() {
-    const classes = useStyles()
     const [activeTab, setActiveTab] = useState<Tabs.Tab>()
     const [createDetails, setCreateDetails] = useState<Bookmarks.CreateDetails>({})
 
@@ -64,12 +58,11 @@ export function EditBookmark() {
     }
 
     return (
-        <Paper className={classes.paper} elevation={3}>
+        <StyledPaper elevation={3}>
             <Grid container>
                 <Grid item xs={12}>
-                    <TextField
+                    <StyledTextField
                         fullWidth
-                        className={`${classes.input} ${classes.sectionSpacing}`}
                         variant='outlined'
                         value={createDetails?.title}
                         InputLabelProps={{ shrink: true }}
@@ -82,24 +75,23 @@ export function EditBookmark() {
                         }}
                         onChange={(event: ChangeEvent<HTMLInputElement>) => handleTextChange(event, 'title')}
                     />
-                    <TextField
+                    <StyledTextField
                         fullWidth
                         multiline
-                        className={`${classes.input} ${classes.sectionSpacing}`}
                         rows={4}
                         variant='outlined'
                         value={createDetails?.url}
                         InputLabelProps={{ shrink: true }}
                         onChange={(event: ChangeEvent<HTMLInputElement>) => handleTextChange(event, 'url')}
                     />
-                    <div className={classes.sectionSpacing}>
+                    <SectionContainer>
                         <FolderSelection createDetails={createDetails} onFolderSelect={handleSelectFolder} />
-                    </div>
+                    </SectionContainer>
                     <Button variant='contained' color='primary' onClick={handleAddBookmark}>
                         Add Bookmark
                     </Button>
                 </Grid>
             </Grid>
-        </Paper>
+        </StyledPaper>
     )
 }

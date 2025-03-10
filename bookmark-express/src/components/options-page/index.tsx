@@ -1,35 +1,36 @@
 import React, { MouseEvent, useEffect, useState } from 'react'
-import { Chip, Container, FormControlLabel, FormGroup, makeStyles, Paper, Switch, Typography } from '@material-ui/core'
+import { Chip, Container, FormControlLabel, FormGroup, Paper, Switch, Typography } from '@mui/material'
+import { styled } from '@mui/material/styles'
 import { getFavorites, getUserOptions, saveFavorites, saveUserOptions } from 'utils/storage'
 import { defaultUserOptions, UserOptionKey, UserOptions } from 'utils/options'
 import { BrowseFolders } from 'components/BrowseFolders'
 import { Favorite, Node } from 'react-app-env'
 
-const useStyles = makeStyles((theme) => ({
-    header: {
-        margin: theme.spacing(2, 0),
-    },
-    paper: {
-        padding: theme.spacing(2),
-    },
-    favoritesContainer: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        listStyle: 'none',
-        padding: theme.spacing(0.5),
-        margin: theme.spacing(2, 0),
-        minHeight: '45px',
-        color: 'gray',
-    },
-    chip: {
-        margin: theme.spacing(0.5),
-    },
+const StyledHeader = styled(Typography)(({ theme }) => ({
+    margin: theme.spacing(2, 0),
+}))
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+    padding: theme.spacing(2),
+}))
+
+const FavoritesContainer = styled(Paper)(({ theme }) => ({
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    listStyle: 'none',
+    padding: theme.spacing(0.5),
+    margin: theme.spacing(2, 0),
+    minHeight: '45px',
+    color: 'gray',
+}))
+
+const StyledChip = styled(Chip)(({ theme }) => ({
+    margin: theme.spacing(0.5),
 }))
 
 export function OptionsPage() {
-    const classes = useStyles()
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [userOptions, setUserOptions] = useState<UserOptions>(defaultUserOptions)
     const [favoriteFolders, setFavoriteFolders] = React.useState<Favorite[]>([])
@@ -89,10 +90,10 @@ export function OptionsPage() {
 
     return isLoading ? null : (
         <Container>
-            <Typography className={classes.header} variant='h3'>
+            <StyledHeader variant='h3'>
                 Options
-            </Typography>
-            <Paper elevation={3} className={classes.paper}>
+            </StyledHeader>
+            <StyledPaper elevation={3}>
                 <FormGroup>
                     <FormControlLabel
                         control={
@@ -111,29 +112,28 @@ export function OptionsPage() {
                     />
                 </FormGroup>
 
-                <Typography className={classes.header} variant='h5'>
+                <StyledHeader variant='h5'>
                     Favorites
-                </Typography>
-                <Paper elevation={3} component='ul' className={classes.favoritesContainer}>
+                </StyledHeader>
+                <FavoritesContainer elevation={3} component='ul'>
                     {!favoriteFolders.length && <Typography>Select a favorite below and it will show here</Typography>}
                     {favoriteFolders.map((favorite) => (
                         <li key={favorite.id}>
-                            <Chip
+                            <StyledChip
                                 label={favorite.title}
                                 onDelete={handleDeleteFavorite(favorite)}
-                                className={classes.chip}
                             />
                         </li>
                     ))}
-                </Paper>
-                <Paper className={classes.paper} elevation={3}>
+                </FavoritesContainer>
+                <StyledPaper elevation={3}>
                     <BrowseFolders
                         mode='favorites'
                         favoriteFolders={favoriteFolders}
                         onFolderSelect={handleAddFavorite}
                     />
-                </Paper>
-            </Paper>
+                </StyledPaper>
+            </StyledPaper>
         </Container>
     )
 }

@@ -6,40 +6,40 @@ import {
     ListItemAvatar,
     ListItemSecondaryAction,
     ListItemText,
-    makeStyles,
-} from '@material-ui/core'
+} from '@mui/material'
+import { styled } from '@mui/material/styles'
 import AppContext from 'context/AppContext'
 import { highlightText, isFolder } from 'utils/misc'
 import { saveMetadata } from 'utils/storage'
 import { ResultActions } from './ResultActions'
 import { Node } from 'react-app-env'
 
-const useStyles = makeStyles({
-    title: {
-        '& .search-hit': {
-            backgroundColor: '#3f51b5',
-            color: 'white',
-        },
-    },
-    url: {
-        fontSize: '12px',
-        fontStyle: 'italic',
-        color: 'gray',
-        wordBreak: 'break-all',
-
-        '& .search-hit': {
-            backgroundColor: '#3f51b5',
-            color: 'white',
-        },
-    },
-    justDeleted: {
-        opacity: 0.2,
+const TitleDiv = styled('div')({
+    '& .search-hit': {
+        backgroundColor: '#3f51b5',
+        color: 'white',
     },
 })
 
+const UrlDiv = styled('div')({
+    fontSize: '12px',
+    fontStyle: 'italic',
+    color: 'gray',
+    wordBreak: 'break-all',
+    '& .search-hit': {
+        backgroundColor: '#3f51b5',
+        color: 'white',
+    },
+})
+
+const StyledListItem = styled(ListItem, {
+    shouldForwardProp: (prop) => prop !== 'justDeleted',
+})<{ justDeleted?: boolean }>(({ justDeleted }) => ({
+    opacity: justDeleted ? 0.2 : 1,
+}))
+
 export function Results() {
     const context = useContext(AppContext)
-    const classes = useStyles()
 
     if (!context.results.length) return null
 
@@ -67,24 +67,22 @@ export function Results() {
                 const urlWithHighlights = highlightText(bookmark.url ?? '', context.query)
 
                 return (
-                    <ListItem
-                        className={metaForResult.justDeleted ? classes.justDeleted : ''}
-                        button
+                    <StyledListItem
+                        justDeleted={metaForResult.justDeleted}
                         key={bookmark.id}
                         onClick={() => handleOpenBookmark(bookmark)}
+                        sx={{ cursor: 'pointer' }}
                     >
                         <ListItemAvatar>
                             <Avatar src={`chrome://favicon/${bookmark.url}`} />
                         </ListItemAvatar>
                         <ListItemText secondary={context.userOptions.showBreadcrumbs && metaForResult.breadcrumbs}>
                             <>
-                                <div
-                                    className={classes.title}
+                                <TitleDiv
                                     dangerouslySetInnerHTML={{ __html: titleWithHighlights }}
                                 />
                                 {context.userOptions.showUrls && (
-                                    <div
-                                        className={classes.url}
+                                    <UrlDiv
                                         dangerouslySetInnerHTML={{ __html: urlWithHighlights }}
                                     />
                                 )}
@@ -93,7 +91,7 @@ export function Results() {
                         <ListItemSecondaryAction>
                             <ResultActions bookmarkId={bookmark.id} />
                         </ListItemSecondaryAction>
-                    </ListItem>
+                    </StyledListItem>
                 )
             })}
         </List>
