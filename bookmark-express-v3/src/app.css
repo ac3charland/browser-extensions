@@ -1,0 +1,18 @@
+/* Chrome allows a popup up to 800px wide; 780 leaves a little breathing room. */
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    width: 780px;
+    font-family: sans-serif;
+    font-size: 18px;
+}
+
+/* Shared highlight color for search hits, applied inside components. */
+:root {
+    --search-hit-bg: yellow;
+    --selected-bg: #c2ffba;
+}

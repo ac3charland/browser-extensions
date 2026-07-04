@@ -1,0 +1,22 @@
+{
+    "name": "bookmark-express-v3",
+    "version": "10.0.0",
+    "description": "Instant search for your Chrome bookmarks. A Manifest V3 rewrite in Svelte + TypeScript.",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
+        "check": "svelte-check --tsconfig ./tsconfig.json",
+        "zip": "npm run build && cd dist && zip -r ../bookmark-express-v3.zip * && cd .."
+    },
+    "devDependencies": {
+        "@sveltejs/vite-plugin-svelte": "^5.0.3",
+        "@tsconfig/svelte": "^5.0.4",
+        "@types/chrome": "^0.0.301",
+        "svelte": "^5.19.0",
+        "svelte-check": "^4.1.4",
+        "typescript": "^5.7.3",
+        "vite": "^6.0.7"
+    }
+}
