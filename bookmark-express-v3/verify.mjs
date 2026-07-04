@@ -23,6 +23,12 @@ const server = createServer(async (req, res) => {
 await new Promise((r) => server.listen(0, r))
 const port = server.address().port
 
+// Read the built manifest so the mock only exposes chrome.* namespaces the
+// extension actually declares a permission for — mirroring real Chrome, where
+// e.g. chrome.storage is undefined without the "storage" permission.
+const manifest = JSON.parse(await readFile(join(DIST, 'manifest.json'), 'utf8'))
+const permissions = manifest.permissions ?? []
+
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 const page = await browser.newPage()
 
@@ -31,7 +37,7 @@ page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`))
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`))
 
 // Mock the chrome.* surface the extension uses, with a small bookmark tree.
-await page.addInitScript(() => {
+await page.addInitScript((permissions) => {
     const tree = [
         {
             id: '0',
@@ -53,9 +59,10 @@ await page.addInitScript(() => {
     ]
     const store = {}
     window.__opened = []
-    window.chrome = {
-        runtime: { getURL: (p) => 'chrome-extension://fake' + p },
-        storage: {
+    // runtime.getURL is always available; other namespaces are permission-gated.
+    const chrome = { runtime: { getURL: (p) => 'chrome-extension://fake' + p } }
+    if (permissions.includes('storage')) {
+        chrome.storage = {
             local: {
                 get: async (keys) => {
                     const out = {}
@@ -64,8 +71,10 @@ await page.addInitScript(() => {
                 },
                 set: async (obj) => Object.assign(store, obj),
             },
-        },
-        bookmarks: {
+        }
+    }
+    if (permissions.includes('bookmarks')) {
+        chrome.bookmarks = {
             getTree: async () => tree,
             search: async (q) => {
                 const flat = []
@@ -73,10 +82,11 @@ await page.addInitScript(() => {
                 tree.forEach(walk)
                 return flat.filter((b) => (b.title + ' ' + b.url).toLowerCase().includes(q.toLowerCase()))
             },
-        },
+        }
     }
+    window.chrome = chrome
     window.open = (url) => window.__opened.push(url)
-})
+}, permissions)
 
 await page.goto(`http://localhost:${port}/index.html`)
 
