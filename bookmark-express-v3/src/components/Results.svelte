@@ -54,15 +54,19 @@
 
 <style>
     ul {
+        box-sizing: border-box;
         width: 780px;
         margin: 0;
-        padding: 0;
+        /* Match the search bar's horizontal inset so results align under it. */
+        padding: 0 10px;
         list-style: none;
     }
 
     li {
+        display: flex;
         margin: 0;
         padding: 10px;
+        border-radius: 8px;
         overflow-wrap: break-word;
     }
 
@@ -71,19 +75,19 @@
     }
 
     .favicon {
+        flex: 0 0 16px;
         margin-top: 3px;
         margin-right: 10px;
         width: 16px;
         height: 16px;
-        display: inline-block;
-        vertical-align: top;
         background-size: 16px 16px;
         background-repeat: no-repeat;
     }
 
     .detail {
-        display: inline-block;
-        width: 725px;
+        /* min-width: 0 lets the .url ellipsis work inside the flex row. */
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     .bookmark-link {

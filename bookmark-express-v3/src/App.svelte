@@ -75,7 +75,7 @@
             onkeydown={handleKeydown}
             class="search-bar"
             type="text"
-            placeholder="start typing"
+            placeholder="Start typing..."
         />
     {:else}
         <span class="loading">Loading...</span>
@@ -91,27 +91,41 @@
         position: sticky;
         top: 0;
         z-index: 1;
-        background: Canvas;
+        box-sizing: border-box;
+        width: 780px;
+        padding: 8px 10px;
+        background: #fff;
     }
 
     .search-bar,
     .loading {
         box-sizing: border-box;
-        width: 780px;
-        height: 50px;
-        padding: 10px;
+        width: 100%;
         font-family: sans-serif;
         font-size: 18px;
-        border: none;
-        outline: none;
+        color: #101626;
     }
 
     .search-bar {
         display: block;
+        height: 46px;
+        padding: 8px 12px;
+        border: 2px solid #1b2540;
+        border-radius: 12px;
+        outline: none;
+        background: #fff;
+    }
+
+    .search-bar::placeholder {
+        color: #8a93a3;
+    }
+
+    .search-bar:focus {
+        border-color: #101626;
     }
 
     .loading {
-        display: inline-block;
-        line-height: 30px;
+        display: block;
+        padding: 8px 12px;
     }
 </style>
