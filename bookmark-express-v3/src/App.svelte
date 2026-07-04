@@ -91,41 +91,27 @@
         position: sticky;
         top: 0;
         z-index: 1;
-        box-sizing: border-box;
-        width: 780px;
-        padding: 8px 10px;
-        background: #fff;
+        background: Canvas;
     }
 
     .search-bar,
     .loading {
         box-sizing: border-box;
-        width: 100%;
+        width: 780px;
+        height: 50px;
+        padding: 10px;
         font-family: sans-serif;
         font-size: 18px;
-        color: #101626;
+        border: none;
+        outline: none;
     }
 
     .search-bar {
         display: block;
-        height: 46px;
-        padding: 8px 12px;
-        border: 2px solid #1b2540;
-        border-radius: 12px;
-        outline: none;
-        background: #fff;
-    }
-
-    .search-bar::placeholder {
-        color: #8a93a3;
-    }
-
-    .search-bar:focus {
-        border-color: #101626;
     }
 
     .loading {
-        display: block;
-        padding: 8px 12px;
+        display: inline-block;
+        line-height: 30px;
     }
 </style>
