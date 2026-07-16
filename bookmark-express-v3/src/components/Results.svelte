@@ -1,16 +1,18 @@
 <script lang="ts">
     import type { SearchResult } from '../lib/types'
     import { faviconUrl } from '../lib/favicon'
+    import { shouldOpenInNewTab } from '../lib/settings'
     import Highlighted from './Highlighted.svelte'
 
     interface Props {
         results: SearchResult[]
         query: string
         selectedIndex: number
-        onopen: (result: SearchResult) => void
+        invert: boolean
+        onopen: (result: SearchResult, newTab: boolean) => void
     }
 
-    let { results, query, selectedIndex, onopen }: Props = $props()
+    let { results, query, selectedIndex, invert, onopen }: Props = $props()
 
     // Element refs so we can keep the keyboard-selected row in view.
     let items = $state<HTMLLIElement[]>([])
@@ -21,7 +23,8 @@
 
     function handleClick(event: MouseEvent, result: SearchResult) {
         event.preventDefault()
-        onopen(result)
+        // Mirror the keyboard: Shift inverts the default new-tab/same-tab choice.
+        onopen(result, shouldOpenInNewTab(event.shiftKey, invert))
     }
 </script>
 

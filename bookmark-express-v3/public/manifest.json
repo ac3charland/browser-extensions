@@ -6,6 +6,10 @@
     "action": {
         "default_popup": "index.html"
     },
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": true
+    },
     "permissions": ["bookmarks", "favicon", "storage"],
     "icons": {
         "16": "images/icon16.png",
