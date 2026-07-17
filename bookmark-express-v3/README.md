@@ -59,9 +59,31 @@ vs. `components/ClassicView.svelte`), so behavior stays identical between them.
 
 ```bash
 npm install
-npm run dev      # Vite dev server (UI only; chrome.* APIs need the real extension)
-npm run build    # type-check + production build into dist/
-npm run zip      # build and package dist/ into bookmark-express-v3.zip for the store
+npm run dev       # Vite dev server (UI only; chrome.* APIs need the real extension)
+npm run build     # type-check + production build into dist/
+npm run build:dev # same, but a distinct "dev" build (see below)
+npm run zip       # build and package dist/ into bookmark-express-v3.zip for the store
+```
+
+### Running a dev build alongside prod
+
+`npm run build:dev` produces a build you can load unpacked at the same time as
+the Web Store ("prod") build without the two colliding:
+
+- **Name** — "Bookmark Express **Dev**", so the two are distinct in
+  `chrome://extensions` and the toolbar tooltip.
+- **Icon** — the navy icon is recolored **amber** so you can tell the dev popup
+  from prod at a glance.
+- **Shortcut** — the popup hotkey moves to **Ctrl+Shift+U** (prod stays
+  Ctrl+Shift+K) so Chrome assigns both extensions a working shortcut.
+
+Everything else is identical to the prod build. The differences live in one
+place — `scripts/dev-build.mjs` — applied at build time by the `bmx-dev-build`
+Vite plugin. The amber icons in `dev-icons/` are recolored from the prod icons
+by `scripts/gen-dev-icons.mjs` (re-run it only if the prod art changes).
+
+```bash
+node verify-dev-build.mjs   # pins the dev-build differences (no build/browser needed)
 ```
 
 ## Load it in Chrome
