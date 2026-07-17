@@ -17,38 +17,45 @@
 </script>
 
 <div class="page">
-    <main class="panel">
-        <h1>Bookmark Express</h1>
-        <p class="tagline">Settings</p>
+    <header class="wordmark">Bookmark Express</header>
+
+    <main class="card">
+        <h1 class="heading">Settings</h1>
 
         {#if ready}
-            <div class="setting">
-                <label class="row">
-                    <span class="text">
-                        <span class="name">Invert tab behavior</span>
-                        <span class="desc">
-                            {#if settings.invertTabBehavior}
-                                Enter opens in the same tab; Shift+Enter opens in a new tab.
-                            {:else}
-                                Enter opens in a new tab; Shift+Enter opens in the same tab.
-                            {/if}
-                        </span>
-                    </span>
-                    <input
-                        type="checkbox"
-                        checked={settings.invertTabBehavior}
-                        onchange={onToggle}
-                    />
-                </label>
+            <div class="row">
+                <div class="label">Tab behavior</div>
+                <div class="control">
+                    <label class="check">
+                        <input
+                            type="checkbox"
+                            checked={settings.invertTabBehavior}
+                            onchange={onToggle}
+                        />
+                        <span class="check-label">Invert tab behavior</span>
+                    </label>
+                    <p class="desc">
+                        {#if settings.invertTabBehavior}
+                            Enter opens in the same tab; Shift+Enter opens in a new tab.
+                        {:else}
+                            Enter opens in a new tab; Shift+Enter opens in the same tab.
+                        {/if}
+                    </p>
+                </div>
             </div>
         {/if}
     </main>
+
+    <footer class="footer">Instant search for your Chrome bookmarks.</footer>
 </div>
 
 <style>
-    /* Primarily-dark options page: navy brand background, cream serif text,
-       centered panel (Instapaper-style). Colors are the brand palette sampled in
-       scripts/gen-store-assets.mjs (#101624 navy, #f2efe6 cream, #96a0b3 muted). */
+    /* Mirrors the Instapaper options menu (serif wordmark over a centered card
+       with a left-aligned header, bold row labels, and controls on the right),
+       rendered in dark mode with the brand palette sampled in
+       scripts/gen-store-assets.mjs (#101624 navy, #f2efe6 cream, #96a0b3 muted).
+       The wordmark stays serif like Instapaper's; the header and options are
+       sans-serif. */
     :global(html),
     :global(body) {
         margin: 0;
@@ -57,83 +64,97 @@
 
     :global(body) {
         min-height: 100vh;
-        background: radial-gradient(70% 60% at 50% 0%, #1c2740 0%, #101624 70%);
-        background-color: #101624;
+        background: #101624;
         color: #f2efe6;
-        font-family: Georgia, 'Times New Roman', serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
     .page {
         min-height: 100vh;
         box-sizing: border-box;
+        padding: 48px 20px 40px;
         display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 72px 20px;
+        flex-direction: column;
+        align-items: center;
     }
 
-    .panel {
-        width: 100%;
-        max-width: 560px;
-        box-sizing: border-box;
-        padding: 44px;
-        background: #1b2740;
-        border: 1px solid #33405c;
-        border-radius: 16px;
-        box-shadow: 0 20px 55px rgba(0, 0, 0, 0.45);
-    }
-
-    h1 {
-        margin: 0;
+    .wordmark {
+        margin-bottom: 28px;
         text-align: center;
-        font-size: 30px;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 40px;
         font-weight: 700;
+        color: #f2efe6;
     }
 
-    .tagline {
-        margin: 8px 0 32px;
-        text-align: center;
-        color: #96a0b3;
-        font-size: 13px;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
+    .card {
+        width: 100%;
+        max-width: 640px;
+        box-sizing: border-box;
+        padding: 32px 40px 40px;
+        background: #182339;
+        border: 1px solid #2a3550;
+        border-radius: 6px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
     }
 
-    .setting {
-        padding-top: 26px;
-        border-top: 1px solid #33405c;
+    .heading {
+        margin: 0;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #33405c;
+        font-size: 28px;
+        font-weight: 400;
+        color: #f2efe6;
     }
 
     .row {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 22px;
+        gap: 24px;
+        padding-top: 28px;
+    }
+
+    .label {
+        flex: 0 0 180px;
+        font-size: 17px;
+        font-weight: 700;
+        color: #f2efe6;
+    }
+
+    .control {
+        flex: 1;
+    }
+
+    .check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         cursor: pointer;
     }
 
-    .text {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
+    .check input {
+        flex: none;
+        width: 18px;
+        height: 18px;
+        accent-color: #6b8fd6;
+        cursor: pointer;
     }
 
-    .name {
-        font-size: 19px;
+    .check-label {
+        font-size: 17px;
+        color: #c7cede;
     }
 
     .desc {
-        color: #96a0b3;
-        font-size: 15px;
+        margin: 10px 0 0 28px;
+        font-size: 14px;
         line-height: 1.45;
+        color: #8b95a8;
     }
 
-    input[type='checkbox'] {
-        flex: none;
-        margin-top: 4px;
-        width: 20px;
-        height: 20px;
-        accent-color: #f2efe6;
-        cursor: pointer;
+    .footer {
+        margin-top: 26px;
+        text-align: center;
+        font-size: 13px;
+        color: #8b95a8;
     }
 </style>

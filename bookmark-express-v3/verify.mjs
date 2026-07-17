@@ -181,7 +181,7 @@ check(
 )
 
 // --- Scenario: options page toggles and persists the setting -----------------
-const opt = await openPopup({}, 'options.html', '.panel')
+const opt = await openPopup({}, 'options.html', '.card')
 
 // Starts unchecked with the default (not-inverted) description.
 const optChecked = await opt.page.locator('input[type=checkbox]').isChecked()
