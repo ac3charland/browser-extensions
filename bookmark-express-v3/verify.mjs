@@ -213,7 +213,10 @@ check((await cls.page.locator('.folder-path').count()) > 0, 'expected classic fo
 check((await cls.page.locator('.row').count()) === 0, 'classic look should not render modern rows')
 
 const clsHint = await cls.page.locator('.hint').innerText()
-check(clsHint === 'shift + enter to open in same tab', `classic hint was "${clsHint}"`)
+check(
+    clsHint === 'shift + enter to open in same tab · cmd + shift + enter for incognito',
+    `classic hint was "${clsHint}"`,
+)
 
 // Behavior is identical to modern (shared controller).
 await cls.page.locator('.search-bar').press('ArrowDown')
@@ -243,7 +246,10 @@ await inv.page.fill('.search-bar', 'github')
 await inv.page.waitForSelector('li', { timeout: 5000 })
 
 const invHint = await inv.page.locator('.hint').innerText()
-check(invHint === 'shift + enter to open in new tab', `inverted hint was "${invHint}"`)
+check(
+    invHint === 'shift + enter to open in new tab · cmd + shift + enter for incognito',
+    `inverted hint was "${invHint}"`,
+)
 
 await inv.page.locator('.search-bar').press('Enter')
 actions = await inv.page.evaluate(() => window.__tabActions)

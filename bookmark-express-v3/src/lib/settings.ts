@@ -72,9 +72,10 @@ export function openMode(mods: OpenModifiers, invertTabBehavior: boolean): OpenM
 }
 
 /**
- * The right-aligned hint shown in the search bar, describing what Shift+Enter
- * does under the current setting. Default: Shift+Enter opens in the same tab.
+ * The right-aligned hint shown in the classic search bar. Describes what
+ * Shift+Enter does under the current setting (default: opens in the same tab),
+ * plus the fixed Cmd+Shift+Enter incognito shortcut.
  */
 export function shiftEnterHint(invertTabBehavior: boolean): string {
-    return `shift + enter to open in ${invertTabBehavior ? 'new' : 'same'} tab`
+    return `shift + enter to open in ${invertTabBehavior ? 'new' : 'same'} tab · cmd + shift + enter for incognito`
 }

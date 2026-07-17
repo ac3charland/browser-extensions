@@ -66,7 +66,7 @@
 
     /* Reserve room on the right so a long query doesn't slide under the hint. */
     .search-bar.with-hint {
-        padding-right: 210px;
+        padding-right: 470px;
     }
 
     .search-row {
