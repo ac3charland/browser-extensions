@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Bookmark Express",
     "description": "This extension displays a list of your bookmarks filtered by instant search. That's it.",
-    "version": "10.1.0",
+    "version": "10.2.0",
     "action": {
         "default_popup": "index.html"
     },

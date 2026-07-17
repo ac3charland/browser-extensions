@@ -39,6 +39,13 @@ The extension's options page (right-click the toolbar icon → **Options**) has 
 **Invert tab behavior** toggle that swaps the two, so Enter reuses the current
 tab and Shift+Enter opens a new one. The hint text updates to match.
 
+**Cmd+Shift+Enter** (Ctrl+Shift+Enter on Windows/Linux, or Cmd/Ctrl+Shift+click)
+opens the selected bookmark in a fresh **incognito window**. Unlike the tab
+behavior above, this shortcut has no toggle — it's a fixed keystroke, shown in
+the modern popup's keyboard-hint footer. It relies on `chrome.windows.create`,
+so the extension must be granted **Allow in incognito** on `chrome://extensions`
+for the window to appear.
+
 ## Appearance
 
 The popup ships with a modern, command-palette-style look (rounded container,

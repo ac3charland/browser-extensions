@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte'
     import type { SearchResult } from '../lib/types'
-    import { shouldOpenInNewTab, type Theme } from '../lib/settings'
+    import { shouldOpenInNewTab, openMode, type Theme, type OpenMode } from '../lib/settings'
     import { highlight } from '../lib/highlight'
     import Favicon from './Favicon.svelte'
 
@@ -14,7 +14,7 @@
         oninput: (value: string) => void
         onkeydown: (event: KeyboardEvent) => void
         onhover: (index: number) => void
-        onopen: (result: SearchResult, newTab: boolean) => void
+        onopen: (result: SearchResult, mode: OpenMode) => void
     }
 
     let {
@@ -75,7 +75,7 @@
 
     function handleClick(event: MouseEvent, result: SearchResult) {
         event.preventDefault()
-        onopen(result, shouldOpenInNewTab(event.shiftKey, invert))
+        onopen(result, openMode(event, invert))
     }
 </script>
 
@@ -137,6 +137,7 @@
         <span class="hint"><span class="kbd">↑↓</span> Navigate</span>
         <span class="hint"><span class="kbd">↵</span> {enterLabel}</span>
         <span class="hint"><span class="kbd">⇧↵</span> {shiftEnterLabel}</span>
+        <span class="hint"><span class="kbd">⌘⇧↵</span> Incognito</span>
         <span class="hint"><span class="kbd">Esc</span> Close</span>
     </div>
 </div>

@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { SearchResult } from '../lib/types'
     import { faviconUrl } from '../lib/favicon'
-    import { shouldOpenInNewTab } from '../lib/settings'
+    import { openMode, type OpenMode } from '../lib/settings'
     import Highlighted from './Highlighted.svelte'
 
     interface Props {
@@ -9,7 +9,7 @@
         query: string
         selectedIndex: number
         invert: boolean
-        onopen: (result: SearchResult, newTab: boolean) => void
+        onopen: (result: SearchResult, mode: OpenMode) => void
     }
 
     let { results, query, selectedIndex, invert, onopen }: Props = $props()
@@ -23,8 +23,8 @@
 
     function handleClick(event: MouseEvent, result: SearchResult) {
         event.preventDefault()
-        // Mirror the keyboard: Shift inverts the default new-tab/same-tab choice.
-        onopen(result, shouldOpenInNewTab(event.shiftKey, invert))
+        // Mirror the keyboard: Shift inverts new-tab/same-tab, Cmd/Ctrl+Shift opens incognito.
+        onopen(result, openMode(event, invert))
     }
 </script>
 

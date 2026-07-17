@@ -4,10 +4,11 @@
     import type { SearchResult } from './lib/types'
     import {
         loadSettings,
-        shouldOpenInNewTab,
+        openMode,
         shiftEnterHint,
         DEFAULT_SETTINGS,
         type Settings,
+        type OpenMode,
     } from './lib/settings'
     import ClassicView from './components/ClassicView.svelte'
     import ModernView from './components/ModernView.svelte'
@@ -78,7 +79,7 @@
             case 'Enter':
                 if (query.length > 1 && results[selectedIndex]) {
                     event.preventDefault()
-                    open(results[selectedIndex], shouldOpenInNewTab(event.shiftKey, settings.invertTabBehavior))
+                    open(results[selectedIndex], openMode(event, settings.invertTabBehavior))
                 }
                 break
         }
@@ -89,12 +90,17 @@
         selectedIndex = index
     }
 
-    async function open(result: SearchResult, newTab: boolean) {
+    async function open(result: SearchResult, mode: OpenMode) {
         await store.recordAccess(result.id)
         // chrome.tabs.create/update work without the "tabs" permission (that
         // permission only gates reading sensitive tab fields). A new tab is a
         // fresh create; the same tab navigates the window's active tab.
-        if (newTab) {
+        // Incognito needs a window (tabs can't be spawned incognito directly);
+        // chrome.windows also needs no permission, but the user must have granted
+        // the extension "Allow in incognito" for the new window to appear.
+        if (mode === 'incognito') {
+            chrome.windows.create({ url: result.url, incognito: true })
+        } else if (mode === 'new-tab') {
             chrome.tabs.create({ url: result.url })
         } else {
             chrome.tabs.update({ url: result.url })
