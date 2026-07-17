@@ -7,6 +7,7 @@
     "scripts": {
         "dev": "vite",
         "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
+        "build:dev": "svelte-check --tsconfig ./tsconfig.json && BMX_DEV=1 vite build",
         "check": "svelte-check --tsconfig ./tsconfig.json",
         "zip": "npm run build && cd dist && zip -r ../bookmark-express-v3.zip * && cd .."
     },
@@ -14,6 +15,7 @@
         "@sveltejs/vite-plugin-svelte": "^5.0.3",
         "@tsconfig/svelte": "^5.0.4",
         "@types/chrome": "^0.0.301",
+        "@types/node": "^22.10.5",
         "svelte": "^5.19.0",
         "svelte-check": "^4.1.4",
         "typescript": "^5.7.3",
