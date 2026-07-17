@@ -7,3 +7,11 @@ export function faviconUrl(pageUrl: string, size = 32): string {
     url.searchParams.set('size', String(size))
     return url.toString()
 }
+
+// The single uppercase letter shown on the favicon fallback when a real favicon
+// isn't available. The tile's background/foreground come from theme tokens
+// (--favicon-bg / --favicon-fg) so the fallback matches the active colour scheme.
+export function faviconInitial(title: string, url: string): string {
+    const source = title.trim() || url.replace(/^https?:\/\//, '')
+    return (source[0] ?? '?').toUpperCase()
+}
