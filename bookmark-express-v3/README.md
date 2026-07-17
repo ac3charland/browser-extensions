@@ -28,6 +28,17 @@ Behavior is otherwise a faithful port: instant filter as you type (min 2
 chars), most-used bookmarks ranked first, folder path shown per result,
 search-term highlighting, and arrow-key / Enter navigation.
 
+## Opening bookmarks
+
+By default, **Enter** opens the selected bookmark in a **new tab** and
+**Shift+Enter** opens it in the **same tab** (clicking a result follows the same
+rule, with Shift inverting it). Once results appear, the search bar shows a
+right-aligned hint reminding you what Shift+Enter does.
+
+The extension's options page (right-click the toolbar icon → **Options**) has an
+**Invert tab behavior** toggle that swaps the two, so Enter reuses the current
+tab and Shift+Enter opens a new one. The hint text updates to match.
+
 ## Develop
 
 ```bash
