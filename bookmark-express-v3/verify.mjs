@@ -111,67 +111,102 @@ async function openPopup(seed = {}, path = 'index.html', waitFor = '.search-bar'
     return { page, logs }
 }
 
-// --- Scenario: default settings (invertTabBehavior not set) -------------------
-const def = await openPopup()
-await def.page.fill('.search-bar', 'github')
-await def.page.waitForSelector('li', { timeout: 5000 })
+let actions
 
-const resultCount = await def.page.locator('li').count()
-const firstTitle = await def.page.locator('li').first().locator('.bookmark-link').innerText()
-const firstPath = await def.page.locator('li').first().locator('.folder-path').innerText()
-const highlightCount = await def.page.locator('.search-hit').count()
+// --- Scenario: default look is the MODERN popup ------------------------------
+const mod = await openPopup()
+await mod.page.fill('.search-bar', 'github')
+await mod.page.waitForSelector('.row', { timeout: 5000 })
 
-check(resultCount === 2, `expected 2 github results, got ${resultCount}`)
-check(highlightCount > 0, 'expected search-hit highlighting')
-check(firstTitle.length > 0 && firstPath.length >= 0, 'expected a titled first result with a path')
+const rowCount = await mod.page.locator('.row').count()
+const firstTitle = await mod.page.locator('.row').first().locator('.title').innerText()
+const firstCrumb = await mod.page.locator('.row').first().locator('.crumb').innerText()
+const firstUrl = await mod.page.locator('.row').first().locator('.url').innerText()
+const modHighlights = await mod.page.locator('.search-hit').count()
 
-// Helper text present, right-aligned copy reflects the default setting.
-const defHint = await def.page.locator('.hint').innerText()
-check(defHint === 'shift + enter to open in same tab', `default hint was "${defHint}"`)
+check(rowCount === 2, `expected 2 github results, got ${rowCount}`)
+check(modHighlights > 0, 'expected search-hit highlighting on title and/or URL')
+check(firstTitle.length > 0, 'expected a titled first result')
+check(firstCrumb.includes('›'), `expected a "›" breadcrumb, got "${firstCrumb}"`)
+check(firstUrl.includes('github'), `expected the full URL shown, got "${firstUrl}"`)
 
-// Arrow nav still moves the selection.
-await def.page.locator('.search-bar').press('ArrowDown')
-const selectedIndex = await def.page.evaluate(() =>
-    [...document.querySelectorAll('li')].findIndex((li) => li.classList.contains('selected')),
+// Modern chrome: keyboard-hint footer and a theme toggle button are present.
+check((await mod.page.locator('.footer .kbd').count()) === 3, 'expected 3 footer key hints')
+check((await mod.page.locator('.theme-toggle').count()) === 1, 'expected a theme toggle button')
+
+// Arrow nav moves the selection (rows carry the .selected class).
+await mod.page.locator('.search-bar').press('ArrowDown')
+const modSelected = await mod.page.evaluate(() =>
+    [...document.querySelectorAll('.row')].findIndex((r) => r.classList.contains('selected')),
 )
-check(selectedIndex === 1, `arrow-down should select index 1, got ${selectedIndex}`)
-await def.page.locator('.search-bar').press('ArrowUp')
+check(modSelected === 1, `arrow-down should select row 1, got ${modSelected}`)
+await mod.page.locator('.search-bar').press('ArrowUp')
 
-// Default: plain Enter opens a NEW tab (chrome.tabs.create).
-await def.page.locator('.search-bar').press('Enter')
-let actions = await def.page.evaluate(() => window.__tabActions)
+// Default: plain Enter opens a NEW tab; Shift+Enter reuses the tab.
+await mod.page.locator('.search-bar').press('Enter')
+actions = await mod.page.evaluate(() => window.__tabActions)
 check(
     actions.length === 1 && actions[0].action === 'create',
-    `default Enter should create a new tab, got ${JSON.stringify(actions)}`,
+    `modern Enter should create a new tab, got ${JSON.stringify(actions)}`,
 )
-
-// Default: Shift+Enter opens in the SAME tab (chrome.tabs.update).
-await def.page.evaluate(() => (window.__tabActions.length = 0))
-await def.page.locator('.search-bar').press('Shift+Enter')
-actions = await def.page.evaluate(() => window.__tabActions)
+await mod.page.evaluate(() => (window.__tabActions.length = 0))
+await mod.page.locator('.search-bar').press('Shift+Enter')
+actions = await mod.page.evaluate(() => window.__tabActions)
 check(
     actions.length === 1 && actions[0].action === 'update',
-    `default Shift+Enter should reuse the tab, got ${JSON.stringify(actions)}`,
+    `modern Shift+Enter should reuse the tab, got ${JSON.stringify(actions)}`,
 )
 
-// --- Scenario: inverted settings ---------------------------------------------
-const inv = await openPopup({ settings: { invertTabBehavior: true } })
+// The theme toggle flips the resolved scheme (html[data-theme]).
+const themeBefore = await mod.page.evaluate(() => document.documentElement.dataset.theme)
+await mod.page.locator('.theme-toggle').click()
+const themeAfter = await mod.page.evaluate(() => document.documentElement.dataset.theme)
+check(
+    (themeBefore === 'light' && themeAfter === 'dark') ||
+        (themeBefore === 'dark' && themeAfter === 'light'),
+    `theme toggle should flip light/dark, got ${themeBefore} -> ${themeAfter}`,
+)
+
+// --- Scenario: classic look (opt-in via settings) ----------------------------
+const cls = await openPopup({ settings: { useClassic: true } })
+await cls.page.fill('.search-bar', 'github')
+await cls.page.waitForSelector('li', { timeout: 5000 })
+
+check((await cls.page.locator('li').count()) === 2, 'expected 2 results in the classic list')
+check((await cls.page.locator('.folder-path').count()) > 0, 'expected classic folder-path rows')
+check((await cls.page.locator('.row').count()) === 0, 'classic look should not render modern rows')
+
+const clsHint = await cls.page.locator('.hint').innerText()
+check(clsHint === 'shift + enter to open in same tab', `classic hint was "${clsHint}"`)
+
+// Behavior is identical to modern (shared controller).
+await cls.page.locator('.search-bar').press('ArrowDown')
+const clsSelected = await cls.page.evaluate(() =>
+    [...document.querySelectorAll('li')].findIndex((li) => li.classList.contains('selected')),
+)
+check(clsSelected === 1, `classic arrow-down should select index 1, got ${clsSelected}`)
+await cls.page.locator('.search-bar').press('ArrowUp')
+await cls.page.locator('.search-bar').press('Enter')
+actions = await cls.page.evaluate(() => window.__tabActions)
+check(
+    actions.length === 1 && actions[0].action === 'create',
+    `classic Enter should create a new tab, got ${JSON.stringify(actions)}`,
+)
+
+// --- Scenario: inverted tab behavior (checked against the classic hint copy) --
+const inv = await openPopup({ settings: { invertTabBehavior: true, useClassic: true } })
 await inv.page.fill('.search-bar', 'github')
 await inv.page.waitForSelector('li', { timeout: 5000 })
 
-// Hint copy flips with the setting.
 const invHint = await inv.page.locator('.hint').innerText()
 check(invHint === 'shift + enter to open in new tab', `inverted hint was "${invHint}"`)
 
-// Inverted: plain Enter opens in the SAME tab.
 await inv.page.locator('.search-bar').press('Enter')
 actions = await inv.page.evaluate(() => window.__tabActions)
 check(
     actions.length === 1 && actions[0].action === 'update',
     `inverted Enter should reuse the tab, got ${JSON.stringify(actions)}`,
 )
-
-// Inverted: Shift+Enter opens a NEW tab.
 await inv.page.evaluate(() => (window.__tabActions.length = 0))
 await inv.page.locator('.search-bar').press('Shift+Enter')
 actions = await inv.page.evaluate(() => window.__tabActions)
@@ -180,31 +215,41 @@ check(
     `inverted Shift+Enter should open a new tab, got ${JSON.stringify(actions)}`,
 )
 
-// --- Scenario: options page toggles and persists the setting -----------------
+// --- Scenario: options page toggles and persists every setting ---------------
 const opt = await openPopup({}, 'options.html', '.card')
+const invertBox = opt.page.locator('input[type=checkbox]').nth(0)
+const classicBox = opt.page.locator('input[type=checkbox]').nth(1)
 
-// Starts unchecked with the default (not-inverted) description.
-const optChecked = await opt.page.locator('input[type=checkbox]').isChecked()
-check(optChecked === false, 'options checkbox should start unchecked by default')
-const descBefore = (await opt.page.locator('.desc').innerText()).trim()
+// Both checkboxes start unchecked; Theme starts on System.
+check((await invertBox.isChecked()) === false, 'invert checkbox should start unchecked')
+check((await classicBox.isChecked()) === false, 'classic checkbox should start unchecked')
+const activeTheme = (await opt.page.locator('.seg.active').innerText()).trim()
+check(activeTheme === 'System', `theme should start on System, got "${activeTheme}"`)
+
+// Invert toggle persists and flips the tab-behavior description copy.
+const descBefore = (await opt.page.locator('.row').nth(0).locator('.desc').innerText()).trim()
 check(
     descBefore === 'Enter opens in a new tab; Shift+Enter opens in the same tab.',
-    `default options description was "${descBefore}"`,
+    `default invert description was "${descBefore}"`,
 )
-
-// Toggling it persists to chrome.storage.local and updates the description copy.
-await opt.page.locator('input[type=checkbox]').check()
-const stored = await opt.page.evaluate(async () => (await chrome.storage.local.get('settings')).settings)
-check(stored?.invertTabBehavior === true, `toggle should persist invertTabBehavior, got ${JSON.stringify(stored)}`)
-const descAfter = (await opt.page.locator('.desc').innerText()).trim()
+await invertBox.check()
+const descAfter = (await opt.page.locator('.row').nth(0).locator('.desc').innerText()).trim()
 check(
     descAfter === 'Enter opens in the same tab; Shift+Enter opens in a new tab.',
-    `inverted options description was "${descAfter}"`,
+    `inverted invert description was "${descAfter}"`,
 )
+
+// Selecting a theme and the classic look persists to chrome.storage.local.
+await opt.page.getByRole('radio', { name: 'Dark' }).click()
+await classicBox.check()
+const stored = await opt.page.evaluate(async () => (await chrome.storage.local.get('settings')).settings)
+check(stored?.invertTabBehavior === true, `should persist invertTabBehavior, got ${JSON.stringify(stored)}`)
+check(stored?.theme === 'dark', `should persist theme, got ${JSON.stringify(stored)}`)
+check(stored?.useClassic === true, `should persist useClassic, got ${JSON.stringify(stored)}`)
 
 // Only fail on real JS exceptions (pageerror). Resource 404s such as the mock's
 // favicon endpoint are expected noise in this harness, not logic errors.
-const errors = [...def.logs, ...inv.logs, ...opt.logs].filter((l) => l.includes('pageerror'))
+const errors = [...mod.logs, ...cls.logs, ...inv.logs, ...opt.logs].filter((l) => l.includes('pageerror'))
 check(errors.length === 0, `page errors: ${errors.join(' | ')}`)
 
 await browser.close()

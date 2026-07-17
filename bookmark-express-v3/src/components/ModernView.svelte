@@ -1,0 +1,310 @@
+<script lang="ts">
+    import { onMount } from 'svelte'
+    import type { SearchResult } from '../lib/types'
+    import { shouldOpenInNewTab, type Theme } from '../lib/settings'
+    import { highlight } from '../lib/highlight'
+    import Favicon from './Favicon.svelte'
+
+    interface Props {
+        query: string
+        results: SearchResult[]
+        selectedIndex: number
+        invert: boolean
+        theme: Theme
+        oninput: (value: string) => void
+        onkeydown: (event: KeyboardEvent) => void
+        onhover: (index: number) => void
+        onopen: (result: SearchResult, newTab: boolean) => void
+        onsettheme: (theme: Theme) => void
+    }
+
+    let {
+        query,
+        results,
+        selectedIndex,
+        invert,
+        theme,
+        oninput,
+        onkeydown,
+        onhover,
+        onopen,
+        onsettheme,
+    }: Props = $props()
+
+    let searchInput = $state<HTMLInputElement>()
+    let rows = $state<HTMLAnchorElement[]>([])
+
+    // Whether the OS currently prefers dark, tracked live so 'system' follows it.
+    let systemDark = $state(false)
+
+    onMount(() => {
+        searchInput?.focus()
+        const mq = window.matchMedia('(prefers-color-scheme: dark)')
+        systemDark = mq.matches
+        const onChange = (event: MediaQueryListEvent) => (systemDark = event.matches)
+        mq.addEventListener('change', onChange)
+        return () => mq.removeEventListener('change', onChange)
+    })
+
+    // Resolve the effective scheme: 'system' defers to the OS, otherwise pinned.
+    let resolved = $derived<'light' | 'dark'>(
+        theme === 'system' ? (systemDark ? 'dark' : 'light') : theme,
+    )
+
+    // Drive the palette (defined in :global blocks below) off a document attribute.
+    $effect(() => {
+        document.documentElement.dataset.theme = resolved
+    })
+
+    // Keep the keyboard-selected row scrolled into view.
+    $effect(() => {
+        rows[selectedIndex]?.scrollIntoView({ block: 'nearest' })
+    })
+
+    // The toggle button shows the theme it switches *to*.
+    let toggleLabel = $derived(resolved === 'dark' ? 'Light' : 'Dark')
+
+    function toggleTheme() {
+        onsettheme(resolved === 'dark' ? 'light' : 'dark')
+    }
+
+    // Folder path rendered as a breadcrumb ("Bookmarks Bar › Dev"). The stored
+    // path joins segments with " / " (see bookmarks.ts buildPaths).
+    function breadcrumb(path: string): string {
+        return path
+            .split(' / ')
+            .filter(Boolean)
+            .join(' › ')
+    }
+
+    function handleClick(event: MouseEvent, result: SearchResult) {
+        event.preventDefault()
+        onopen(result, shouldOpenInNewTab(event.shiftKey, invert))
+    }
+</script>
+
+<!-- prettier-ignore -->
+{#snippet highlighted(text: string)}{#each highlight(text, query) as seg}{#if seg.hit}<span class="search-hit">{seg.text}</span>{:else}{seg.text}{/if}{/each}{/snippet}
+
+<div class="popup">
+    <div class="search-wrap">
+        <span class="search-icon"></span>
+        <input
+            bind:this={searchInput}
+            value={query}
+            oninput={(event) => oninput(event.currentTarget.value)}
+            {onkeydown}
+            class="search-bar"
+            type="text"
+            placeholder="Start typing..."
+        />
+        <button class="theme-toggle" onclick={toggleTheme}>{toggleLabel}</button>
+    </div>
+
+    {#if results.length > 0}
+        <div class="list">
+            {#each results as result, i (result.id)}
+                <a
+                    bind:this={rows[i]}
+                    class="row"
+                    class:selected={i === selectedIndex}
+                    href={result.url}
+                    onmouseenter={() => onhover(i)}
+                    onclick={(event) => handleClick(event, result)}
+                >
+                    <Favicon url={result.url} title={result.title} />
+                    <div class="content">
+                        {#if result.path}
+                            <div class="crumb">{breadcrumb(result.path)}</div>
+                        {/if}
+                        <div class="title">{@render highlighted(result.title)}</div>
+                        <div class="url">{@render highlighted(result.url)}</div>
+                    </div>
+                </a>
+            {/each}
+        </div>
+    {/if}
+
+    <div class="footer">
+        <span class="hint"><span class="kbd">↑↓</span> Navigate</span>
+        <span class="hint"><span class="kbd">↵</span> Open</span>
+        <span class="hint"><span class="kbd">Esc</span> Close</span>
+    </div>
+</div>
+
+<style>
+    /* Palette tokens from the design handoff, keyed off the resolved scheme set
+       on <html data-theme>. Custom properties inherit, so the scoped rules below
+       (and the themed body background) pick them up. */
+    :global(html[data-theme='dark']) {
+        --bg: oklch(0.22 0.012 250);
+        --input-bg: oklch(0.28 0.014 250);
+        --text: oklch(0.95 0.005 250);
+        --sub: oklch(0.66 0.012 250);
+        --border: oklch(0.34 0.012 250);
+        --hover: oklch(0.3 0.014 250);
+        --selected: oklch(0.36 0.05 145);
+        --highlight: oklch(0.76 0.17 95);
+    }
+
+    :global(html[data-theme='light']) {
+        --bg: oklch(1 0 0);
+        --input-bg: oklch(0.97 0.003 90);
+        --text: oklch(0.22 0.01 90);
+        --sub: oklch(0.52 0.01 90);
+        --border: oklch(0.9 0.005 90);
+        --hover: oklch(0.965 0.004 90);
+        --selected: oklch(0.92 0.05 145);
+        --highlight: oklch(0.86 0.14 95);
+    }
+
+    :global(body) {
+        margin: 0;
+        background: var(--bg);
+    }
+
+    /* Outer container. The handoff's 812px assumes surrounding page padding; a
+       real Chrome popup caps near 800px, so we trim the outer width (not the
+       internal spacing) to 780px per the handoff note. */
+    .popup {
+        box-sizing: border-box;
+        width: 780px;
+        padding: 14px;
+        background: var(--bg);
+        color: var(--text);
+        border-radius: 20px;
+        box-shadow:
+            0 1px 3px rgba(0, 0, 0, 0.2),
+            0 20px 48px rgba(0, 0, 0, 0.28);
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .search-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        background: var(--input-bg);
+    }
+
+    .search-icon {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--sub);
+        border-radius: 50%;
+    }
+
+    .search-bar {
+        flex: 1;
+        min-width: 0;
+        box-sizing: border-box;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 16px;
+    }
+
+    .theme-toggle {
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--sub);
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+
+    .list {
+        max-height: 420px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 11px 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        color: inherit;
+        cursor: default;
+    }
+
+    .row.selected {
+        background: var(--selected);
+    }
+
+    .content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .crumb {
+        margin-bottom: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--sub);
+    }
+
+    .title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .url {
+        margin-top: 3px;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        line-height: 1.3;
+        color: var(--sub);
+        overflow-wrap: break-word;
+    }
+
+    /* Flush highlight (no horizontal padding); clones the rounded background
+       across line breaks so multi-line matches render as separate rects. */
+    .search-hit {
+        background: var(--highlight);
+        border-radius: 2px;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+        color: oklch(0.15 0 0);
+    }
+
+    .footer {
+        display: flex;
+        gap: 14px;
+        margin-top: 8px;
+        padding: 10px 6px 2px;
+        border-top: 1px solid var(--border);
+    }
+
+    .hint {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--sub);
+    }
+
+    .kbd {
+        background: var(--hover);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 6px;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text);
+    }
+</style>

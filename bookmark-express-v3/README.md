@@ -39,6 +39,22 @@ The extension's options page (right-click the toolbar icon → **Options**) has 
 **Invert tab behavior** toggle that swaps the two, so Enter reuses the current
 tab and Shift+Enter opens a new one. The hint text updates to match.
 
+## Appearance
+
+The popup ships with a modern, command-palette-style look (rounded container,
+pill search bar, folder breadcrumbs, full URLs, match highlighting on both title
+and URL, and a keyboard-hint footer). The options page controls two appearance
+settings:
+
+- **Theme** — **System** (follows your OS via `prefers-color-scheme`, the
+  default), **Light**, or **Dark**. The popup also has a quick Light/Dark toggle
+  in its search bar that writes back to this same setting.
+- **Use classic Bookmark Express** — opt back into the original plain-list look.
+
+Both looks are driven by the same search/keyboard/tab-opening controller
+(`App.svelte`); only the presentation layer differs (`components/ModernView.svelte`
+vs. `components/ClassicView.svelte`), so behavior stays identical between them.
+
 ## Develop
 
 ```bash

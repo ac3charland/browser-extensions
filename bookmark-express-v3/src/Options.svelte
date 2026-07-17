@@ -1,9 +1,15 @@
 <script lang="ts">
     import { onMount } from 'svelte'
-    import { loadSettings, saveSettings, DEFAULT_SETTINGS, type Settings } from './lib/settings'
+    import { loadSettings, saveSettings, DEFAULT_SETTINGS, type Settings, type Theme } from './lib/settings'
 
     let ready = $state(false)
     let settings = $state<Settings>(DEFAULT_SETTINGS)
+
+    const THEMES: { value: Theme; label: string }[] = [
+        { value: 'system', label: 'System' },
+        { value: 'light', label: 'Light' },
+        { value: 'dark', label: 'Dark' },
+    ]
 
     onMount(async () => {
         settings = await loadSettings()
@@ -12,6 +18,16 @@
 
     async function onToggle(event: Event) {
         settings.invertTabBehavior = (event.target as HTMLInputElement).checked
+        await saveSettings(settings)
+    }
+
+    async function onTheme(theme: Theme) {
+        settings.theme = theme
+        await saveSettings(settings)
+    }
+
+    async function onToggleClassic(event: Event) {
+        settings.useClassic = (event.target as HTMLInputElement).checked
         await saveSettings(settings)
     }
 </script>
@@ -40,6 +56,46 @@
                         {:else}
                             Enter opens in a new tab; Shift+Enter opens in the same tab.
                         {/if}
+                    </p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="label">Theme</div>
+                <div class="control">
+                    <div class="segmented" role="radiogroup" aria-label="Theme">
+                        {#each THEMES as option}
+                            <button
+                                type="button"
+                                class="seg"
+                                class:active={settings.theme === option.value}
+                                role="radio"
+                                aria-checked={settings.theme === option.value}
+                                onclick={() => onTheme(option.value)}
+                            >
+                                {option.label}
+                            </button>
+                        {/each}
+                    </div>
+                    <p class="desc">
+                        Color scheme for the modern popup. System follows your operating system.
+                    </p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="label">Classic look</div>
+                <div class="control">
+                    <label class="check">
+                        <input
+                            type="checkbox"
+                            checked={settings.useClassic}
+                            onchange={onToggleClassic}
+                        />
+                        <span class="check-label">Use classic Bookmark Express</span>
+                    </label>
+                    <p class="desc">
+                        Show the original popup design instead of the modern one.
                     </p>
                 </div>
             </div>
@@ -142,6 +198,36 @@
     .check-label {
         font-size: 17px;
         color: #c7cede;
+    }
+
+    .segmented {
+        display: inline-flex;
+        padding: 3px;
+        gap: 3px;
+        background: #101624;
+        border: 1px solid #2a3550;
+        border-radius: 8px;
+    }
+
+    .seg {
+        border: none;
+        background: transparent;
+        color: #c7cede;
+        font: inherit;
+        font-size: 15px;
+        padding: 6px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .seg:hover {
+        color: #f2efe6;
+    }
+
+    .seg.active {
+        background: #6b8fd6;
+        color: #101624;
+        font-weight: 600;
     }
 
     .desc {

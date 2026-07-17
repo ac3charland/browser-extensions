@@ -4,23 +4,29 @@
     import type { SearchResult } from './lib/types'
     import {
         loadSettings,
+        saveSettings,
         shouldOpenInNewTab,
         shiftEnterHint,
         DEFAULT_SETTINGS,
         type Settings,
+        type Theme,
     } from './lib/settings'
-    import Results from './components/Results.svelte'
+    import ClassicView from './components/ClassicView.svelte'
+    import ModernView from './components/ModernView.svelte'
 
+    // App.svelte is the shared controller for both looks: it owns bookmark
+    // search, keyboard navigation, selection, and tab-opening, then renders one
+    // of two presentation views (classic or modern) based on the user's setting.
+    // The two views are pure presentation over this single source of behavior.
     const store = new BookmarkStore()
 
     let ready = $state(false)
     let query = $state('')
     let results = $state<SearchResult[]>([])
     let selectedIndex = $state(0)
-    let searchInput = $state<HTMLInputElement>()
     let settings = $state<Settings>(DEFAULT_SETTINGS)
 
-    // The Shift+Enter hint shown in the search bar, kept in sync with the setting.
+    // The Shift+Enter hint shown in the classic search bar, kept in sync with the setting.
     let hint = $derived(shiftEnterHint(settings.invertTabBehavior))
 
     // Guards against out-of-order async search responses clobbering newer results.
@@ -32,18 +38,19 @@
         settings = loaded
         ready = true
         // Reflect changes made on the options page without needing to reopen the
-        // popup. chrome.storage.onChanged is unavailable in some test harnesses,
-        // so guard the subscription.
+        // popup (look, theme, tab behavior). chrome.storage.onChanged is
+        // unavailable in some test harnesses, so guard the subscription.
         chrome.storage?.onChanged?.addListener((changes, area) => {
             if (area === 'local' && changes.settings) {
                 settings = { ...settings, ...changes.settings.newValue }
             }
         })
-        // Focus once the input is in the DOM. The old extension used a background
-        // page to pre-warm the popup; MV3 service workers are ephemeral, so we
-        // instead just keep the popup lean enough that startup stays snappy.
-        queueMicrotask(() => searchInput?.focus())
     })
+
+    function handleInput(value: string) {
+        query = value
+        runSearch()
+    }
 
     async function runSearch() {
         // Skip searching on a single character (matches the old behavior).
@@ -79,6 +86,11 @@
         }
     }
 
+    // Hover-to-select (used by the modern view; classic selects via keyboard only).
+    function handleHover(index: number) {
+        selectedIndex = index
+    }
+
     async function open(result: SearchResult, newTab: boolean) {
         await store.recordAccess(result.id)
         // chrome.tabs.create/update work without the "tabs" permission (that
@@ -90,84 +102,55 @@
             chrome.tabs.update({ url: result.url })
         }
     }
+
+    // Persist a theme change from the modern popup's quick toggle. Saving a plain
+    // spread (not the $state proxy) keeps chrome.storage's structured clone happy.
+    async function setTheme(theme: Theme) {
+        const next = { ...settings, theme }
+        settings = next
+        await saveSettings(next)
+    }
 </script>
 
-<div class="topbar">
-    {#if ready}
-        <div class="search-row">
-            <input
-                bind:this={searchInput}
-                bind:value={query}
-                oninput={runSearch}
-                onkeydown={handleKeydown}
-                class="search-bar"
-                class:with-hint={results.length > 0}
-                type="text"
-                placeholder="Start typing..."
-            />
-            {#if results.length > 0}
-                <span class="hint">{hint}</span>
-            {/if}
-        </div>
-    {:else}
-        <span class="loading">Loading...</span>
-    {/if}
-</div>
-
 {#if ready}
-    <Results {results} {query} {selectedIndex} invert={settings.invertTabBehavior} onopen={open} />
+    {#if settings.useClassic}
+        <ClassicView
+            {query}
+            {results}
+            {selectedIndex}
+            {hint}
+            invert={settings.invertTabBehavior}
+            oninput={handleInput}
+            onkeydown={handleKeydown}
+            onopen={open}
+        />
+    {:else}
+        <ModernView
+            {query}
+            {results}
+            {selectedIndex}
+            invert={settings.invertTabBehavior}
+            theme={settings.theme}
+            oninput={handleInput}
+            onkeydown={handleKeydown}
+            onhover={handleHover}
+            onopen={open}
+            onsettheme={setTheme}
+        />
+    {/if}
+{:else}
+    <span class="loading">Loading...</span>
 {/if}
 
 <style>
-    .topbar {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        background: Canvas;
-    }
-
-    .search-bar,
     .loading {
+        display: inline-block;
         box-sizing: border-box;
         width: 780px;
         height: 50px;
         padding: 10px;
         font-family: sans-serif;
         font-size: 18px;
-        border: none;
-        outline: none;
-    }
-
-    .search-bar {
-        display: block;
-    }
-
-    /* Reserve room on the right so a long query doesn't slide under the hint. */
-    .search-bar.with-hint {
-        padding-right: 210px;
-    }
-
-    .search-row {
-        position: relative;
-    }
-
-    /* Right-aligned, low-contrast helper text overlaid inside the search bar.
-       GrayText is a system color, so it stays low-contrast in light and dark. */
-    .hint {
-        position: absolute;
-        top: 50%;
-        right: 12px;
-        transform: translateY(-50%);
-        font-family: sans-serif;
-        font-size: 13px;
-        color: GrayText;
-        pointer-events: none;
-        user-select: none;
-        white-space: nowrap;
-    }
-
-    .loading {
-        display: inline-block;
         line-height: 30px;
     }
 </style>
