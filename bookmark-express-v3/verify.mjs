@@ -68,14 +68,19 @@ async function openPopup(seed = {}, path = 'index.html', waitFor = '.search-bar'
                 },
             ]
             const store = { ...seed }
-            // chrome.tabs.create/update need no permission, so mock them always.
-            // Record each call so tests can assert new-tab vs same-tab behavior.
+            // chrome.tabs.create/update and chrome.windows.create need no
+            // permission, so mock them always. Record each call so tests can
+            // assert new-tab vs same-tab vs incognito behavior.
             window.__tabActions = []
             const chrome = {
                 runtime: { getURL: (p) => 'chrome-extension://fake' + p },
                 tabs: {
                     create: (opts) => window.__tabActions.push({ action: 'create', url: opts.url }),
                     update: (opts) => window.__tabActions.push({ action: 'update', url: opts.url }),
+                },
+                windows: {
+                    create: (opts) =>
+                        window.__tabActions.push({ action: 'window', url: opts.url, incognito: opts.incognito }),
                 },
             }
             if (permissions.includes('storage')) {
@@ -134,10 +139,16 @@ check(firstUrl.includes('github'), `expected the full URL shown, got "${firstUrl
 // theme toggle (theme is controlled from the options page only).
 check((await mod.page.locator('.search-wrap svg.search-icon').count()) === 1, 'expected an inline search icon')
 check((await mod.page.locator('.theme-toggle').count()) === 0, 'in-bar theme toggle should be gone')
-check((await mod.page.locator('.footer .kbd').count()) === 4, 'expected 4 footer key hints')
-// The footer spells out both Enter and Shift+Enter targets for the default setting.
+check((await mod.page.locator('.footer .kbd').count()) === 5, 'expected 5 footer key hints')
+// The footer spells out both Enter and Shift+Enter targets for the default setting,
+// plus the fixed Cmd+Shift+Enter incognito shortcut.
 const footerText = await mod.page.locator('.footer').innerText()
 check(footerText.includes('New tab') && footerText.includes('Same tab'), `footer should show both tab targets, got "${footerText}"`)
+check(footerText.includes('Incognito'), `footer should advertise the incognito shortcut, got "${footerText}"`)
+check(
+    (await mod.page.locator('.footer .kbd', { hasText: '⌘⇧↵' }).count()) === 1,
+    'footer should show the ⌘⇧↵ incognito key hint',
+)
 // Theme resolves from the setting: 'system' follows the OS (light in this harness).
 check(
     (await mod.page.evaluate(() => document.documentElement.dataset.theme)) === 'light',
@@ -167,6 +178,23 @@ check(
     `modern Shift+Enter should reuse the tab, got ${JSON.stringify(actions)}`,
 )
 
+// Cmd+Shift+Enter opens a fresh incognito window (no toggle gates it). Both the
+// Mac (Meta) and Win/Linux (Control) chords resolve to the same incognito open.
+await mod.page.evaluate(() => (window.__tabActions.length = 0))
+await mod.page.locator('.search-bar').press('Meta+Shift+Enter')
+actions = await mod.page.evaluate(() => window.__tabActions)
+check(
+    actions.length === 1 && actions[0].action === 'window' && actions[0].incognito === true,
+    `Cmd+Shift+Enter should open an incognito window, got ${JSON.stringify(actions)}`,
+)
+await mod.page.evaluate(() => (window.__tabActions.length = 0))
+await mod.page.locator('.search-bar').press('Control+Shift+Enter')
+actions = await mod.page.evaluate(() => window.__tabActions)
+check(
+    actions.length === 1 && actions[0].action === 'window' && actions[0].incognito === true,
+    `Ctrl+Shift+Enter should open an incognito window, got ${JSON.stringify(actions)}`,
+)
+
 // A pinned theme setting overrides the system scheme.
 const dark = await openPopup({ settings: { theme: 'dark' } })
 await dark.page.waitForSelector('.search-bar', { timeout: 5000 })
@@ -185,7 +213,10 @@ check((await cls.page.locator('.folder-path').count()) > 0, 'expected classic fo
 check((await cls.page.locator('.row').count()) === 0, 'classic look should not render modern rows')
 
 const clsHint = await cls.page.locator('.hint').innerText()
-check(clsHint === 'shift + enter to open in same tab', `classic hint was "${clsHint}"`)
+check(
+    clsHint === 'shift + enter to open in same tab · cmd + shift + enter for incognito',
+    `classic hint was "${clsHint}"`,
+)
 
 // Behavior is identical to modern (shared controller).
 await cls.page.locator('.search-bar').press('ArrowDown')
@@ -200,6 +231,14 @@ check(
     actions.length === 1 && actions[0].action === 'create',
     `classic Enter should create a new tab, got ${JSON.stringify(actions)}`,
 )
+// The incognito chord is shared behavior, so it works under the classic look too.
+await cls.page.evaluate(() => (window.__tabActions.length = 0))
+await cls.page.locator('.search-bar').press('Meta+Shift+Enter')
+actions = await cls.page.evaluate(() => window.__tabActions)
+check(
+    actions.length === 1 && actions[0].action === 'window' && actions[0].incognito === true,
+    `classic Cmd+Shift+Enter should open an incognito window, got ${JSON.stringify(actions)}`,
+)
 
 // --- Scenario: inverted tab behavior (checked against the classic hint copy) --
 const inv = await openPopup({ settings: { invertTabBehavior: true, useClassic: true } })
@@ -207,7 +246,10 @@ await inv.page.fill('.search-bar', 'github')
 await inv.page.waitForSelector('li', { timeout: 5000 })
 
 const invHint = await inv.page.locator('.hint').innerText()
-check(invHint === 'shift + enter to open in new tab', `inverted hint was "${invHint}"`)
+check(
+    invHint === 'shift + enter to open in new tab · cmd + shift + enter for incognito',
+    `inverted hint was "${invHint}"`,
+)
 
 await inv.page.locator('.search-bar').press('Enter')
 actions = await inv.page.evaluate(() => window.__tabActions)

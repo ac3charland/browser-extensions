@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte'
     import type { SearchResult } from '../lib/types'
+    import type { OpenMode } from '../lib/settings'
     import Results from './Results.svelte'
 
     interface Props {
@@ -11,7 +12,7 @@
         invert: boolean
         oninput: (value: string) => void
         onkeydown: (event: KeyboardEvent) => void
-        onopen: (result: SearchResult, newTab: boolean) => void
+        onopen: (result: SearchResult, mode: OpenMode) => void
     }
 
     let { query, results, selectedIndex, hint, invert, oninput, onkeydown, onopen }: Props = $props()
@@ -65,7 +66,7 @@
 
     /* Reserve room on the right so a long query doesn't slide under the hint. */
     .search-bar.with-hint {
-        padding-right: 210px;
+        padding-right: 470px;
     }
 
     .search-row {

@@ -46,10 +46,36 @@ export function shouldOpenInNewTab(shiftKey: boolean, invertTabBehavior: boolean
     return shiftKey ? invertTabBehavior : !invertTabBehavior
 }
 
+// How a bookmark should be opened: in a new tab, the current tab, or a fresh
+// incognito window. The tab modes honour the invert setting; incognito is a
+// fixed shortcut with no toggle.
+export type OpenMode = 'new-tab' | 'same-tab' | 'incognito'
+
+// The subset of a keyboard/mouse event the open decision depends on. Both
+// KeyboardEvent and MouseEvent expose these, so one helper covers Enter and
+// clicks alike.
+export interface OpenModifiers {
+    shiftKey: boolean
+    metaKey: boolean
+    ctrlKey: boolean
+}
+
 /**
- * The right-aligned hint shown in the search bar, describing what Shift+Enter
- * does under the current setting. Default: Shift+Enter opens in the same tab.
+ * Resolve which OpenMode an Enter press (or click) should trigger, given the
+ * held modifiers and the invert setting. Cmd/Ctrl + Shift always means
+ * incognito (there is deliberately no setting to change it); otherwise Shift
+ * chooses between new and same tab per shouldOpenInNewTab.
+ */
+export function openMode(mods: OpenModifiers, invertTabBehavior: boolean): OpenMode {
+    if ((mods.metaKey || mods.ctrlKey) && mods.shiftKey) return 'incognito'
+    return shouldOpenInNewTab(mods.shiftKey, invertTabBehavior) ? 'new-tab' : 'same-tab'
+}
+
+/**
+ * The right-aligned hint shown in the classic search bar. Describes what
+ * Shift+Enter does under the current setting (default: opens in the same tab),
+ * plus the fixed Cmd+Shift+Enter incognito shortcut.
  */
 export function shiftEnterHint(invertTabBehavior: boolean): string {
-    return `shift + enter to open in ${invertTabBehavior ? 'new' : 'same'} tab`
+    return `shift + enter to open in ${invertTabBehavior ? 'new' : 'same'} tab · cmd + shift + enter for incognito`
 }
