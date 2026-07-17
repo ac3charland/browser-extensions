@@ -37,9 +37,10 @@ function check(cond, msg) {
     if (!cond) failures.push(msg)
 }
 
-// Open a fresh popup page with a mocked chrome.* surface. `seed` pre-populates
+// Open a fresh extension page with a mocked chrome.* surface. `seed` pre-populates
 // chrome.storage.local (used to start a scenario with the setting already saved).
-async function openPopup(seed = {}) {
+// `path`/`waitFor` let the same mock drive either the popup or the options page.
+async function openPopup(seed = {}, path = 'index.html', waitFor = '.search-bar') {
     const page = await browser.newPage()
     const logs = []
     page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`))
@@ -105,8 +106,8 @@ async function openPopup(seed = {}) {
         { permissions, seed },
     )
 
-    await page.goto(`http://localhost:${port}/index.html`)
-    await page.waitForSelector('.search-bar', { timeout: 5000 })
+    await page.goto(`http://localhost:${port}/${path}`)
+    await page.waitForSelector(waitFor, { timeout: 5000 })
     return { page, logs }
 }
 
@@ -179,9 +180,31 @@ check(
     `inverted Shift+Enter should open a new tab, got ${JSON.stringify(actions)}`,
 )
 
+// --- Scenario: options page toggles and persists the setting -----------------
+const opt = await openPopup({}, 'options.html', '.panel')
+
+// Starts unchecked with the default (not-inverted) description.
+const optChecked = await opt.page.locator('input[type=checkbox]').isChecked()
+check(optChecked === false, 'options checkbox should start unchecked by default')
+const descBefore = (await opt.page.locator('.desc').innerText()).trim()
+check(
+    descBefore === 'Enter opens in a new tab; Shift+Enter opens in the same tab.',
+    `default options description was "${descBefore}"`,
+)
+
+// Toggling it persists to chrome.storage.local and updates the description copy.
+await opt.page.locator('input[type=checkbox]').check()
+const stored = await opt.page.evaluate(async () => (await chrome.storage.local.get('settings')).settings)
+check(stored?.invertTabBehavior === true, `toggle should persist invertTabBehavior, got ${JSON.stringify(stored)}`)
+const descAfter = (await opt.page.locator('.desc').innerText()).trim()
+check(
+    descAfter === 'Enter opens in the same tab; Shift+Enter opens in a new tab.',
+    `inverted options description was "${descAfter}"`,
+)
+
 // Only fail on real JS exceptions (pageerror). Resource 404s such as the mock's
 // favicon endpoint are expected noise in this harness, not logic errors.
-const errors = [...def.logs, ...inv.logs].filter((l) => l.includes('pageerror'))
+const errors = [...def.logs, ...inv.logs, ...opt.logs].filter((l) => l.includes('pageerror'))
 check(errors.length === 0, `page errors: ${errors.join(' | ')}`)
 
 await browser.close()
