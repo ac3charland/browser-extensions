@@ -1,6 +1,6 @@
 {
     "name": "bookmark-express-v3",
-    "version": "10.0.0",
+    "version": "10.1.0",
     "description": "Instant search for your Chrome bookmarks. A Manifest V3 rewrite in Svelte + TypeScript.",
     "private": true,
     "type": "module",
