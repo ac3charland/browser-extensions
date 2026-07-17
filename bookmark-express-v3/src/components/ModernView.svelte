@@ -15,7 +15,6 @@
         onkeydown: (event: KeyboardEvent) => void
         onhover: (index: number) => void
         onopen: (result: SearchResult, newTab: boolean) => void
-        onsettheme: (theme: Theme) => void
     }
 
     let {
@@ -28,7 +27,6 @@
         onkeydown,
         onhover,
         onopen,
-        onsettheme,
     }: Props = $props()
 
     let searchInput = $state<HTMLInputElement>()
@@ -61,12 +59,10 @@
         rows[selectedIndex]?.scrollIntoView({ block: 'nearest' })
     })
 
-    // The toggle button shows the theme it switches *to*.
-    let toggleLabel = $derived(resolved === 'dark' ? 'Light' : 'Dark')
-
-    function toggleTheme() {
-        onsettheme(resolved === 'dark' ? 'light' : 'dark')
-    }
+    // Footer hints reflect the current tab-behavior setting: one label for plain
+    // Enter, one for Shift+Enter, each showing which tab it targets.
+    let enterLabel = $derived(shouldOpenInNewTab(false, invert) ? 'New tab' : 'Same tab')
+    let shiftEnterLabel = $derived(shouldOpenInNewTab(true, invert) ? 'New tab' : 'Same tab')
 
     // Folder path rendered as a breadcrumb ("Bookmarks Bar › Dev"). The stored
     // path joins segments with " / " (see bookmarks.ts buildPaths).
@@ -88,7 +84,20 @@
 
 <div class="popup">
     <div class="search-wrap">
-        <span class="search-icon"></span>
+        <!-- Lucide "search" icon, inlined to avoid a dependency for a single glyph. -->
+        <svg
+            class="search-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+        >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+        </svg>
         <input
             bind:this={searchInput}
             value={query}
@@ -98,7 +107,6 @@
             type="text"
             placeholder="Start typing..."
         />
-        <button class="theme-toggle" onclick={toggleTheme}>{toggleLabel}</button>
     </div>
 
     {#if results.length > 0}
@@ -127,7 +135,8 @@
 
     <div class="footer">
         <span class="hint"><span class="kbd">↑↓</span> Navigate</span>
-        <span class="hint"><span class="kbd">↵</span> Open</span>
+        <span class="hint"><span class="kbd">↵</span> {enterLabel}</span>
+        <span class="hint"><span class="kbd">⇧↵</span> {shiftEnterLabel}</span>
         <span class="hint"><span class="kbd">Esc</span> Close</span>
     </div>
 </div>
@@ -145,6 +154,10 @@
         --hover: oklch(0.3 0.014 250);
         --selected: oklch(0.36 0.05 145);
         --highlight: oklch(0.76 0.17 95);
+        /* Favicon tile: a light-gray backing in dark mode keeps dark favicons
+           legible; the fallback initial sits on it in a dark ink. */
+        --favicon-bg: oklch(0.9 0.005 250);
+        --favicon-fg: oklch(0.3 0 0);
     }
 
     :global(html[data-theme='light']) {
@@ -156,6 +169,10 @@
         --hover: oklch(0.965 0.004 90);
         --selected: oklch(0.92 0.05 145);
         --highlight: oklch(0.86 0.14 95);
+        /* No tile in light mode (per design feedback); the fallback initial sits
+           directly on the popup in a muted ink. */
+        --favicon-bg: transparent;
+        --favicon-fg: oklch(0.45 0 0);
     }
 
     :global(body) {
@@ -194,8 +211,7 @@
         flex-shrink: 0;
         width: 16px;
         height: 16px;
-        border: 2px solid var(--sub);
-        border-radius: 50%;
+        color: var(--sub);
     }
 
     .search-bar {
@@ -208,18 +224,6 @@
         color: var(--text);
         font-family: inherit;
         font-size: 16px;
-    }
-
-    .theme-toggle {
-        flex-shrink: 0;
-        border: 1px solid var(--border);
-        background: transparent;
-        color: var(--sub);
-        font-size: 12px;
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 5px 10px;
-        cursor: pointer;
     }
 
     .list {

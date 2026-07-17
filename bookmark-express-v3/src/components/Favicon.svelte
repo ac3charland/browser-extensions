@@ -1,14 +1,14 @@
 <script lang="ts">
-    import { faviconUrl, faviconColor, faviconInitial } from '../lib/favicon'
+    import { faviconUrl, faviconInitial } from '../lib/favicon'
 
     let { url, title }: { url: string; title: string } = $props()
 
     // Start by trying the real favicon (via the extension's _favicon endpoint).
-    // If it fails to load, fall back to a stable generated color + initial letter.
+    // If it fails to load, fall back to the domain's initial letter.
     let failed = $state(false)
 </script>
 
-<div class="favicon" style="background:{faviconColor(url)}">
+<div class="favicon">
     {#if failed}
         <span class="initial">{faviconInitial(title, url)}</span>
     {:else}
@@ -27,7 +27,8 @@
         align-items: center;
         justify-content: center;
         overflow: hidden;
-        color: #fff;
+        background: var(--favicon-bg);
+        color: var(--favicon-fg);
         font-size: 11px;
         font-weight: 700;
     }

@@ -47,8 +47,8 @@ and URL, and a keyboard-hint footer). The options page controls two appearance
 settings:
 
 - **Theme** — **System** (follows your OS via `prefers-color-scheme`, the
-  default), **Light**, or **Dark**. The popup also has a quick Light/Dark toggle
-  in its search bar that writes back to this same setting.
+  default), **Light**, or **Dark**. Applies to the modern look only, so it's
+  disabled while the classic look is on.
 - **Use classic Bookmark Express** — opt back into the original plain-list look.
 
 Both looks are driven by the same search/keyboard/tab-opening controller

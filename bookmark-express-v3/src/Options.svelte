@@ -63,7 +63,13 @@
             <div class="row">
                 <div class="label">Theme</div>
                 <div class="control">
-                    <div class="segmented" role="radiogroup" aria-label="Theme">
+                    <div
+                        class="segmented"
+                        class:disabled={settings.useClassic}
+                        role="radiogroup"
+                        aria-label="Theme"
+                        aria-disabled={settings.useClassic}
+                    >
                         {#each THEMES as option}
                             <button
                                 type="button"
@@ -71,6 +77,7 @@
                                 class:active={settings.theme === option.value}
                                 role="radio"
                                 aria-checked={settings.theme === option.value}
+                                disabled={settings.useClassic}
                                 onclick={() => onTheme(option.value)}
                             >
                                 {option.label}
@@ -78,7 +85,12 @@
                         {/each}
                     </div>
                     <p class="desc">
-                        Color scheme for the modern popup. System follows your operating system.
+                        {#if settings.useClassic}
+                            The theme only applies to the modern look. Turn off the classic look to
+                            change it.
+                        {:else}
+                            Color scheme for the modern popup. System follows your operating system.
+                        {/if}
                     </p>
                 </div>
             </div>
@@ -228,6 +240,14 @@
         background: #6b8fd6;
         color: #101624;
         font-weight: 600;
+    }
+
+    .segmented.disabled {
+        opacity: 0.4;
+    }
+
+    .segmented.disabled .seg {
+        cursor: not-allowed;
     }
 
     .desc {

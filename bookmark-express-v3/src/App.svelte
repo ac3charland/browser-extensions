@@ -4,12 +4,10 @@
     import type { SearchResult } from './lib/types'
     import {
         loadSettings,
-        saveSettings,
         shouldOpenInNewTab,
         shiftEnterHint,
         DEFAULT_SETTINGS,
         type Settings,
-        type Theme,
     } from './lib/settings'
     import ClassicView from './components/ClassicView.svelte'
     import ModernView from './components/ModernView.svelte'
@@ -103,13 +101,6 @@
         }
     }
 
-    // Persist a theme change from the modern popup's quick toggle. Saving a plain
-    // spread (not the $state proxy) keeps chrome.storage's structured clone happy.
-    async function setTheme(theme: Theme) {
-        const next = { ...settings, theme }
-        settings = next
-        await saveSettings(next)
-    }
 </script>
 
 {#if ready}
@@ -135,7 +126,6 @@
             onkeydown={handleKeydown}
             onhover={handleHover}
             onopen={open}
-            onsettheme={setTheme}
         />
     {/if}
 {:else}

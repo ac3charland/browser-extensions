@@ -130,9 +130,19 @@ check(firstTitle.length > 0, 'expected a titled first result')
 check(firstCrumb.includes('›'), `expected a "›" breadcrumb, got "${firstCrumb}"`)
 check(firstUrl.includes('github'), `expected the full URL shown, got "${firstUrl}"`)
 
-// Modern chrome: keyboard-hint footer and a theme toggle button are present.
-check((await mod.page.locator('.footer .kbd').count()) === 3, 'expected 3 footer key hints')
-check((await mod.page.locator('.theme-toggle').count()) === 1, 'expected a theme toggle button')
+// Modern chrome: a real search icon and a 4-hint keyboard footer, no in-bar
+// theme toggle (theme is controlled from the options page only).
+check((await mod.page.locator('.search-wrap svg.search-icon').count()) === 1, 'expected an inline search icon')
+check((await mod.page.locator('.theme-toggle').count()) === 0, 'in-bar theme toggle should be gone')
+check((await mod.page.locator('.footer .kbd').count()) === 4, 'expected 4 footer key hints')
+// The footer spells out both Enter and Shift+Enter targets for the default setting.
+const footerText = await mod.page.locator('.footer').innerText()
+check(footerText.includes('New tab') && footerText.includes('Same tab'), `footer should show both tab targets, got "${footerText}"`)
+// Theme resolves from the setting: 'system' follows the OS (light in this harness).
+check(
+    (await mod.page.evaluate(() => document.documentElement.dataset.theme)) === 'light',
+    'system theme should resolve to light in the default harness',
+)
 
 // Arrow nav moves the selection (rows carry the .selected class).
 await mod.page.locator('.search-bar').press('ArrowDown')
@@ -157,14 +167,12 @@ check(
     `modern Shift+Enter should reuse the tab, got ${JSON.stringify(actions)}`,
 )
 
-// The theme toggle flips the resolved scheme (html[data-theme]).
-const themeBefore = await mod.page.evaluate(() => document.documentElement.dataset.theme)
-await mod.page.locator('.theme-toggle').click()
-const themeAfter = await mod.page.evaluate(() => document.documentElement.dataset.theme)
+// A pinned theme setting overrides the system scheme.
+const dark = await openPopup({ settings: { theme: 'dark' } })
+await dark.page.waitForSelector('.search-bar', { timeout: 5000 })
 check(
-    (themeBefore === 'light' && themeAfter === 'dark') ||
-        (themeBefore === 'dark' && themeAfter === 'light'),
-    `theme toggle should flip light/dark, got ${themeBefore} -> ${themeAfter}`,
+    (await dark.page.evaluate(() => document.documentElement.dataset.theme)) === 'dark',
+    'theme:dark setting should force the dark scheme',
 )
 
 // --- Scenario: classic look (opt-in via settings) ----------------------------
@@ -247,9 +255,15 @@ check(stored?.invertTabBehavior === true, `should persist invertTabBehavior, got
 check(stored?.theme === 'dark', `should persist theme, got ${JSON.stringify(stored)}`)
 check(stored?.useClassic === true, `should persist useClassic, got ${JSON.stringify(stored)}`)
 
+// With the classic look on, the theme selector is disabled (it only affects modern).
+check(
+    (await opt.page.getByRole('radio', { name: 'Dark' }).isDisabled()) === true,
+    'theme selector should be disabled while classic look is on',
+)
+
 // Only fail on real JS exceptions (pageerror). Resource 404s such as the mock's
 // favicon endpoint are expected noise in this harness, not logic errors.
-const errors = [...mod.logs, ...cls.logs, ...inv.logs, ...opt.logs].filter((l) => l.includes('pageerror'))
+const errors = [...mod.logs, ...dark.logs, ...cls.logs, ...inv.logs, ...opt.logs].filter((l) => l.includes('pageerror'))
 check(errors.length === 0, `page errors: ${errors.join(' | ')}`)
 
 await browser.close()
