@@ -61,7 +61,7 @@ vs. `components/ClassicView.svelte`), so behavior stays identical between them.
 npm install
 npm run dev       # Vite dev server (UI only; chrome.* APIs need the real extension)
 npm run build     # type-check + production build into dist/
-npm run build:dev # same, but a distinct "dev" build (see below)
+npm run build:dev # same, but a distinct "dev" build into dist-dev/ (see below)
 npm run zip       # build and package dist/ into bookmark-express-v3.zip for the store
 ```
 
@@ -70,13 +70,16 @@ npm run zip       # build and package dist/ into bookmark-express-v3.zip for the
 `npm run build:dev` produces a build you can load unpacked at the same time as
 the Web Store ("prod") build without the two colliding:
 
+- **Output** — dev builds land in **`dist-dev/`** (prod keeps `dist/`), so the
+  two never overwrite each other and you can keep both loaded.
 - **Name** — "Bookmark Express **Dev**", so the two are distinct in
   `chrome://extensions` and the toolbar tooltip.
 - **Icon** — the navy icon is recolored **amber** so you can tell the dev popup
   from prod at a glance.
-- **Shortcut** — the popup hotkey moves to **Ctrl+Shift+U** (prod stays
-  Ctrl+Shift+K) so Chrome assigns both extensions a working shortcut.
+- **Shortcut** — the popup hotkey moves to **Ctrl+Shift+L** (`Cmd+Shift+L` on
+  macOS) — prod stays Ctrl+Shift+K — so Chrome assigns both a working shortcut.
 
+Load `dist-dev/` as a second unpacked extension alongside prod's `dist/`.
 Everything else is identical to the prod build. The differences live in one
 place — `scripts/dev-build.mjs` — applied at build time by the `bmx-dev-build`
 Vite plugin. The amber icons in `dev-icons/` are recolored from the prod icons
@@ -91,7 +94,7 @@ node verify-dev-build.mjs   # pins the dev-build differences (no build/browser n
 1. `npm run build`
 2. Visit `chrome://extensions`, enable **Developer mode**.
 3. **Load unpacked** and select the `dist/` folder.
-4. Click the toolbar icon (or press `Ctrl+Shift+L`) and start typing.
+4. Click the toolbar icon (or press `Ctrl+Shift+K`) and start typing.
 
 ## Verify the ported logic
 

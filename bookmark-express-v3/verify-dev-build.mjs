@@ -12,6 +12,7 @@ import {
     DEV_NAME_SUFFIX,
     DEV_SHORTCUT_KEY,
     DEV_ICON_SIZES,
+    DEV_OUT_DIR,
 } from './scripts/dev-build.mjs'
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url))
@@ -44,6 +45,13 @@ for (const platform of Object.keys(prodKeys)) {
         `dev shortcut (${platform}) should keep prod's modifier prefix, got "${devKey}"`,
     )
 }
+// Concretely: prod's K becomes L on every platform (Command/Ctrl/MacCtrl kept).
+check(DEV_SHORTCUT_KEY === 'L', `dev shortcut key should be "L", got "${DEV_SHORTCUT_KEY}"`)
+check(devKeys.windows === 'Ctrl+Shift+L', `dev windows shortcut should be "Ctrl+Shift+L", got "${devKeys.windows}"`)
+check(devKeys.mac === 'MacCtrl+Shift+L', `dev mac shortcut should be "MacCtrl+Shift+L", got "${devKeys.mac}"`)
+
+// --- Output dir: dev builds land somewhere other than the prod dist/ ----------
+check(DEV_OUT_DIR && DEV_OUT_DIR !== 'dist', `dev build must use its own output dir, got "${DEV_OUT_DIR}"`)
 
 // --- Purity: the transform must not mutate the prod manifest ------------------
 check(prod.name === 'Bookmark Express', `deriveDevManifest mutated the prod name, now "${prod.name}"`)
