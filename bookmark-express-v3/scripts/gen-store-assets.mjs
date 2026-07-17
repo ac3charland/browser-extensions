@@ -6,9 +6,11 @@
 //   npm install --no-save sharp playwright
 //   node scripts/gen-store-assets.mjs
 //
-// The headline uses the brand serif (Georgia). On machines without Georgia
-// (e.g. Linux CI), install the metric-compatible Gelasio into ~/.fonts and run
-// `fc-cache` first, otherwise the headline falls back to a generic serif.
+// The headline is rendered in Gelasio (an open, metric-compatible twin of the
+// brand's Georgia) so the output is identical on every platform. Install it
+// first, e.g. drop Gelasio*.ttf into ~/.fonts and run `fc-cache`; without it the
+// headline falls back to a generic serif. Get it from Google Fonts / the
+// google/fonts repo (ofl/gelasio).
 //
 // Outputs into store/.
 import { chromium } from 'playwright'
@@ -28,10 +30,12 @@ const NAVY = { r: 16, g: 22, b: 36 } // #101624, sampled from the brand art
 const navyHex = '#101624'
 const CREAM = '#f2efe6'
 const MUTED = '#96a0b3'
-// Brand serif for the big headline (matches the Bookmark Express wordmark). Real
-// Georgia is used when present (e.g. regenerating on macOS); Gelasio is a
-// metric-compatible stand-in installed on Linux CI, with a plain serif fallback.
-const HEADER_FONT = "Georgia, 'Gelasio', 'Times New Roman', serif"
+// Brand serif for the big headline (matches the Bookmark Express wordmark). We
+// pin Gelasio — a metric- and shape-compatible open twin of Georgia — rather
+// than Georgia itself so the render is identical on every platform (Georgia
+// isn't installed on Linux CI and isn't freely redistributable). The trailing
+// serif is only a safety net if Gelasio somehow isn't installed.
+const HEADER_FONT = "'Gelasio', 'Times New Roman', serif"
 const BODY_FONT = "'DejaVu Sans', Arial, sans-serif"
 
 // --- render the popup UI with a mock bookmark set -----------------------------
