@@ -1,0 +1,274 @@
+<meta charset="utf-8">
+<title>BMX-3 — V2 React feature exploration (spike)</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #5a5f6a; --line: #e3e6ea;
+    --card: #f7f8fa; --accent: #3f51b5; --accent-fg: #ffffff;
+    --p1: #b3261e; --p2: #b26a00; --p3: #2e7d32; --code-bg: #f0f2f5;
+    --new: #b3261e; --partial: #b26a00; --have: #2e7d32;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --fg: #e6e8eb; --muted: #9aa0ab; --line: #2a2e37;
+      --card: #1d2027; --accent: #7986cb; --accent-fg: #16181d;
+      --p1: #f2837a; --p2: #e0a94b; --p3: #7fc784; --code-bg: #23262e;
+      --new: #f2837a; --partial: #e0a94b; --have: #7fc784;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; max-width: 900px; padding: 2.5rem 1.25rem 5rem;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 .35rem; }
+  h2 { font-size: 1.35rem; margin: 2.4rem 0 .8rem; padding-top: .6rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.08rem; margin: 1.5rem 0 .4rem; }
+  h4 { font-size: .98rem; margin: 1.1rem 0 .3rem; }
+  p, li { color: var(--fg); }
+  a { color: var(--accent); }
+  code {
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--code-bg); padding: .1em .35em; border-radius: 4px;
+  }
+  .sub { color: var(--muted); font-size: .95rem; }
+  .meta { margin: .75rem 0 0; display: flex; flex-wrap: wrap; gap: .4rem .9rem; font-size: .9rem; color: var(--muted); }
+  .meta b { color: var(--fg); font-weight: 600; }
+  .callout {
+    background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: 8px; padding: .9rem 1.1rem; margin: 1.2rem 0;
+  }
+  .tocard { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.2rem; }
+  ul.tight { margin: .3rem 0; padding-left: 1.25rem; }
+  ul.tight li { margin: .15rem 0; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; min-width: 640px; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .03em; }
+  .pill {
+    display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+    padding: .12em .5em; border-radius: 999px; white-space: nowrap; text-transform: uppercase;
+  }
+  .pill.new { color: var(--new); border: 1px solid var(--new); }
+  .pill.partial { color: var(--partial); border: 1px solid var(--partial); }
+  .pill.have { color: var(--have); border: 1px solid var(--have); }
+  .prio { font-weight: 700; }
+  .prio.p1 { color: var(--p1); }
+  .prio.p2 { color: var(--p2); }
+  .prio.p3 { color: var(--p3); }
+  .rec {
+    border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem 1.3rem; margin: 1.1rem 0;
+    background: var(--card);
+  }
+  .rec > h3 { margin-top: 0; display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .rec .facts { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; font-size: .86rem; color: var(--muted); margin: .2rem 0 .7rem; }
+  .rec .facts b { color: var(--fg); }
+  .ac { margin: .3rem 0 0; padding-left: 1.2rem; }
+  .ac li { margin: .2rem 0; }
+  .ref { font-size: .82rem; color: var(--muted); }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+</style>
+
+<h1>Spike: explore the V2 React version for feature ideas</h1>
+<p class="sub">A feature-mining report on <code>bookmark-express-next</code> — the earlier Manifest&nbsp;V2, React + Material-UI build — recommending which of its ideas to carry into the shipping product, <code>bookmark-express-v3</code> (Manifest&nbsp;V3, Svelte + TypeScript).</p>
+
+<div class="meta">
+  <span><b>Ticket:</b> BMX-3</span>
+  <span><b>Phase:</b> refinement</span>
+  <span><b>Type:</b> spike (exploration — no product code)</span>
+  <span><b>Date:</b> 2026-07-20</span>
+</div>
+
+<div class="callout">
+  <b>What this document is.</b> A spike's deliverable is knowledge, not shipped code, so this report <em>is</em> the deliverable: it inventories every feature the V2 React version has, marks each against what <code>bookmark-express-v3</code> already ships, and turns the gap into a prioritized, ticket-ready backlog. No app or source changes are made. A later session picks up the recommendations below as their own build tickets.
+</div>
+
+<h2>1. TL;DR</h2>
+<div class="tocard">
+  <p style="margin-top:0">The V2 React version was a playground for <b>bookmark <em>management</em></b> features that the current product deliberately left out when it was rewritten as a lean MV3 launcher. Four of its ideas are worth bringing back:</p>
+  <ul class="tight">
+    <li><span class="prio p1">P1</span> — <b>Bookmark the current page</b> from the popup (its flagship feature; turns BMX from a read-only launcher into a capture tool).</li>
+    <li><span class="prio p1">P1</span> — <b>Per-result actions: Delete &amp; Reset&nbsp;count</b> (cheap, high-utility housekeeping right where you already are).</li>
+    <li><span class="prio p2">P2</span> — <b>Recently-added bookmarks as the empty-query view</b> (fills today's blank popup with something useful; ~a dozen lines).</li>
+    <li><span class="prio p3">P3</span> — <b>Folder favorites / recent / browse-tree picker</b> (only needed to make "bookmark this page" pleasant; the largest UI lift, so it trails the P1 that motivates it).</li>
+  </ul>
+  <p style="margin-bottom:0">Everything else the React version did is either <b>already in v3</b> (search, ranking, highlighting, breadcrumbs, keyboard nav) or is an <b>MV2/MUI artifact not worth porting</b> (see §6).</p>
+</div>
+
+<h2>2. Context — three codebases, one product line</h2>
+<p>The repo carries three generations of the same extension. Knowing which is which is the whole point of this spike:</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Directory</th><th>Manifest</th><th>Stack</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td><code>bookmark-express</code></td><td>V2</td><td>Backbone / jQuery / RequireJS</td><td>The original, on the Chrome Web Store.</td></tr>
+    <tr><td><code>bookmark-express-next</code></td><td><b>V2</b></td><td><b>React 17 + Material-UI + TS</b></td><td><b>The "V2 React version" — this spike's subject.</b> An experiment that grew management features; never shipped.</td></tr>
+    <tr><td><code>bookmark-express-v3</code></td><td><b>V3</b></td><td>Svelte + TS on Vite</td><td>The current, actively-developed product. The target for any ideas we adopt.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The v3 rewrite was scoped as a faithful, fast MV3 port of the <em>original</em> — instant search and launching — and consciously dropped the management features the React experiment had added. This spike revisits that experiment to decide what, if anything, deserves a second life in v3.</p>
+
+<h2>3. What <code>bookmark-express-v3</code> already ships</h2>
+<p>So we don't re-propose things that exist, here is the current baseline (from the v3 README and <code>src/</code>):</p>
+<ul class="tight">
+  <li>Instant search of Chrome bookmarks (min 2 chars), <b>most-used ranked first</b>, folder path per result, title+URL match highlighting.</li>
+  <li>Full keyboard nav (arrows / Enter); open in new vs. same tab with an <b>invert toggle</b>; <b>incognito open</b> via Cmd/Ctrl+Shift+Enter.</li>
+  <li>Modern command-palette look <em>and</em> a classic look, switchable; <b>theme</b> System / Light / Dark.</li>
+  <li>MV3 favicons via the <code>_favicon/</code> endpoint; <code>chrome.storage.local</code> cache with FNV-1a change detection (<code>lib/bookmarks.ts</code>).</li>
+  <li>Options page for the three settings above (<code>lib/settings.ts</code>: <code>invertTabBehavior</code>, <code>useClassic</code>, <code>theme</code>).</li>
+</ul>
+<p>Notably, v3's <code>BookmarkStore</code> is <b>read-only</b> — it does <code>search()</code> and <code>recordAccess()</code> and nothing that mutates bookmarks. Every recommendation below that <em>writes</em> is genuinely new surface area for v3.</p>
+
+<h2>4. Feature inventory of the V2 React version</h2>
+<p>Everything <code>bookmark-express-next</code> can do, with the source that proves it and its status in v3.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Feature</th><th>Where in the React code</th><th>Status in v3</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>Bookmark the current page</b> — "+" button opens an editor pre-filled with the active tab's title, URL and favicon; pick a folder; create.</td>
+      <td><code>SearchBar.tsx</code> (Add icon → <code>viewMode:'add'</code>), <code>EditBookmark.tsx</code> (<code>tabs.query</code> → <code>bookmarks.create</code>)</td>
+      <td><span class="pill new">new</span></td>
+    </tr>
+    <tr>
+      <td><b>Per-result actions menu</b> — a "⋯" menu on each result: <b>Delete</b> the bookmark, <b>Reset count</b> (zero its usage rank).</td>
+      <td><code>ResultActions.tsx</code> (<code>bookmarks.remove</code>; <code>timesAccessed = 0</code>), wired in <code>Results.tsx</code></td>
+      <td><span class="pill new">new</span></td>
+    </tr>
+    <tr>
+      <td><b>Recently-added view</b> — a History button lists the 30 most recently added bookmarks.</td>
+      <td><code>SearchBar.tsx</code> (<code>bookmarks.getRecent(30)</code>, <code>viewMode:'recent'</code>)</td>
+      <td><span class="pill new">new</span></td>
+    </tr>
+    <tr>
+      <td><b>Folder picker (three sources)</b> — when adding, choose a target from <b>Favorite</b>, <b>Recently&nbsp;Used</b>, or a <b>Browse</b> tree, in collapsible accordions.</td>
+      <td><code>FolderSelection.tsx</code></td>
+      <td><span class="pill new">new</span></td>
+    </tr>
+    <tr>
+      <td><b>Favorite folders</b> — star folders in Options; they surface as quick chips in the picker.</td>
+      <td><code>options-page/index.tsx</code>, <code>BrowseFolders.tsx</code> (<code>mode:'favorites'</code>), <code>storage</code> favorites</td>
+      <td><span class="pill new">new</span></td>
+    </tr>
+    <tr>
+      <td><b>Browse the full folder tree</b> — MUI TreeView of the whole bookmark hierarchy.</td>
+      <td><code>BrowseFolders.tsx</code> (<code>mode:'browse'</code>)</td>
+      <td><span class="pill new">new</span></td>
+    </tr>
+    <tr>
+      <td><b>Result display toggles</b> — Options switches for "Show URLs" and "Show breadcrumbs" in results.</td>
+      <td><code>options-page/index.tsx</code>; consumed in <code>Results.tsx</code></td>
+      <td><span class="pill partial">already, differently</span></td>
+    </tr>
+    <tr>
+      <td>Instant search · most-used ranking · title/URL highlighting · breadcrumbs.</td>
+      <td><code>SearchBar.tsx</code>, <code>Results.tsx</code>, <code>utils/metadata.ts</code></td>
+      <td><span class="pill have">have</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h4>Also noted, not built (from <code>bookmark-express-next/TODO.md</code>)</h4>
+<ul class="tight">
+  <li><b>High-resolution favicons</b> — read an <code>apple-touch-icon</code> / web-manifest icon instead of the low-res default. <span class="ref">Largely mooted: v3 already switched to Chrome's MV3 <code>_favicon/</code> endpoint.</span></li>
+  <li><b>Search that surfaces folders</b> and jumps you into Browse at that folder.</li>
+  <li>Generic storage helpers (internal cleanup, not a user feature).</li>
+</ul>
+
+<h2>5. Gap analysis</h2>
+<p>The React experiment's whole theme is <b>write access</b> — creating, deleting, and organizing bookmarks — plus the folder-navigation UI needed to support it. v3 is a pure <b>read/launch</b> tool. So the gap is coherent: adopting any of these means giving v3 its first mutating operations and (for the add flow) its first folder-navigation UI.</p>
+<div class="callout">
+  <b>One thing already covered.</b> The React version's "Show URLs / Show breadcrumbs" toggles are effectively <em>on by default</em> in v3's modern view (it shows full URLs and folder breadcrumbs already). Re-adding them as toggles is not recommended unless users ask to hide them — noted here only so it isn't mistaken for a missing feature.
+</div>
+
+<h2>6. Recommendations — a prioritized, ticket-ready backlog</h2>
+<p>Each block below is sized to become its own follow-up ticket. Effort is relative (Svelte, no Material-UI). "Slots into" names the v3 code the work extends.</p>
+
+<div class="rec">
+  <h3><span class="prio p1">P1</span> Bookmark the current page</h3>
+  <div class="facts"><span><b>Value:</b> high</span><span><b>Effort:</b> medium</span><span><b>Risk:</b> new write path + permissions</span></div>
+  <p>The React version's flagship. A "+" affordance in the popup opens a small form pre-filled with the active tab's <code>title</code> and <code>url</code> (and favicon), lets the user tweak them, choose a destination folder, and save. This is the single feature that most changes what BMX <em>is</em> — from a launcher into a capture-and-launch tool.</p>
+  <p class="ref">React refs: <code>SearchBar.tsx</code> (Add), <code>EditBookmark.tsx</code>. Slots into v3: new <code>add</code> mode in <code>App.svelte</code>, a new create method on <code>BookmarkStore</code> wrapping <code>chrome.bookmarks.create</code>, a new <code>components/AddBookmark.svelte</code>.</p>
+  <p><b>Acceptance criteria</b></p>
+  <ul class="ac">
+    <li>From the popup, the user can open an "add" view that is pre-populated with the current tab's title and URL.</li>
+    <li>Title and URL are editable before saving; the active tab's favicon is shown.</li>
+    <li>Saving calls <code>chrome.bookmarks.create</code> into the chosen folder and closes the popup; the new bookmark appears in subsequent searches.</li>
+    <li>Choosing a destination folder is possible; the default target is defined (e.g. the last-used folder or "Bookmarks Bar") when the picker (P3) is not yet present.</li>
+    <li>Requires only the minimum permissions (<code>bookmarks</code> already granted; add <code>tabs</code>/<code>activeTab</code> as needed) — documented in the manifest change.</li>
+  </ul>
+</div>
+
+<div class="rec">
+  <h3><span class="prio p1">P1</span> Per-result actions: Delete &amp; Reset&nbsp;count</h3>
+  <div class="facts"><span><b>Value:</b> high</span><span><b>Effort:</b> low</span><span><b>Risk:</b> destructive action needs a guard</span></div>
+  <p>A lightweight per-result menu offering <b>Delete</b> (remove the bookmark) and <b>Reset count</b> (zero its usage so it stops floating to the top). Cheap to build, and it lets users do housekeeping without leaving the popup — a natural pairing with P1.</p>
+  <p class="ref">React refs: <code>ResultActions.tsx</code>, <code>Results.tsx</code>. Slots into v3: <code>ModernView.svelte</code>/<code>ClassicView.svelte</code> result rows; new remove + reset methods on <code>BookmarkStore</code> (<code>chrome.bookmarks.remove</code>; clear <code>timesAccessed</code> in <code>bookmarkData</code>).</p>
+  <p><b>Acceptance criteria</b></p>
+  <ul class="ac">
+    <li>Each result exposes an actions affordance that does not interfere with keyboard nav or the click-to-open behavior.</li>
+    <li><b>Delete</b> removes the bookmark via <code>chrome.bookmarks.remove</code> and the row leaves the list (or is visibly disabled); deletion is confirmed or easily undone, since it is destructive.</li>
+    <li><b>Reset count</b> sets that bookmark's <code>timesAccessed</code> to 0, persists it, and the result re-ranks accordingly on the next search.</li>
+    <li>Both actions work in the modern view; parity in the classic view is decided explicitly.</li>
+  </ul>
+  <p class="ref"><b>Simplify vs. the React original:</b> drop the <code>justDeleted</code> opacity-0.2 "ghost row" hack — in v3 just remove the row (or toast with undo).</p>
+</div>
+
+<div class="rec">
+  <h3><span class="prio p2">P2</span> Recently-added bookmarks as the empty-query view</h3>
+  <div class="facts"><span><b>Value:</b> medium</span><span><b>Effort:</b> low</span><span><b>Risk:</b> minimal</span></div>
+  <p>Today v3's popup is blank until you type two characters. The React version had a History button showing the 30 most recently added bookmarks. Better than a button: make that list the <b>default content of the empty popup</b>, so it's useful the instant it opens and typing replaces it with search results.</p>
+  <p class="ref">React ref: <code>SearchBar.tsx</code> (<code>chrome.bookmarks.getRecent(30)</code>). Slots into v3: <code>App.svelte</code> renders a recent list when <code>query.length &lt; 2</code> instead of nothing.</p>
+  <p><b>Acceptance criteria</b></p>
+  <ul class="ac">
+    <li>With an empty/one-char query, the popup shows the N most recently added bookmarks (N configurable in code, default ~30) using the same result row UI.</li>
+    <li>Typing a 2+ char query replaces the recent list with search results; clearing it restores the recent list.</li>
+    <li>Rows behave identically to search results (open, keyboard nav, and any P1b actions).</li>
+  </ul>
+</div>
+
+<div class="rec">
+  <h3><span class="prio p3">P3</span> Folder picker: favorites, recently-used &amp; browse-tree</h3>
+  <div class="facts"><span><b>Value:</b> medium (multiplier on P1)</span><span><b>Effort:</b> high</span><span><b>Risk:</b> most UI to rebuild without MUI</span></div>
+  <p>The React "add" flow let you target a folder three ways: starred <b>Favorites</b>, <b>Recently&nbsp;Used</b> folders, and a full <b>Browse</b> tree — with favorites managed on the Options page. This is what makes "bookmark this page" pleasant for someone with a deep folder hierarchy, but it is also the biggest lift (a tree widget and a new favorites store, all hand-built in Svelte since there is no MUI TreeView). It trails P1 deliberately: ship the add flow with a sensible default folder first, then layer this on.</p>
+  <p class="ref">React refs: <code>FolderSelection.tsx</code>, <code>BrowseFolders.tsx</code>, <code>options-page/index.tsx</code>. Slots into v3: a new <code>components/FolderPicker.svelte</code> + <code>FolderTree.svelte</code>; a favorites store in <code>lib/settings.ts</code> or a new <code>lib/folders.ts</code>; Options additions in <code>Options.svelte</code>.</p>
+  <p><b>Acceptance criteria</b></p>
+  <ul class="ac">
+    <li>The add view (P1) can target any folder chosen from a browsable tree of the bookmark hierarchy.</li>
+    <li>Users can mark/unmark folders as favorites (persisted); favorites appear as quick-pick chips in the picker.</li>
+    <li>Recently-used destination folders are offered as quick picks.</li>
+    <li>Favorites management has a home on the Options page.</li>
+    <li>Consider splitting into sub-tickets: (a) browse-tree picker, (b) favorites, (c) recently-used — favorites/recent are optional polish on top of (a).</li>
+  </ul>
+</div>
+
+<h3>Explicitly <em>not</em> recommended</h3>
+<ul class="tight">
+  <li><b>Show URLs / Show breadcrumbs toggles</b> — v3's modern view already shows both by default; only add toggles if users ask to hide them.</li>
+  <li><b>High-res favicon fetching</b> — the original motivation (low-res <code>chrome://favicon/</code>) is gone in v3, which uses the MV3 <code>_favicon/</code> endpoint. Revisit only if favicon quality is a real complaint.</li>
+  <li><b>Porting anything Material-UI / React-shaped verbatim</b> — the MUI accordions, <code>Avatar</code>, <code>TreeView</code>, and the <code>window.open</code> / <code>chrome://favicon/</code> calls are MV2/stack artifacts. Adopt the <em>ideas</em>; rebuild the UI in v3's existing Svelte components and its <code>_favicon/</code> + <code>openMode</code> conventions.</li>
+</ul>
+
+<h2>7. Risks &amp; open questions</h2>
+<ul class="tight">
+  <li><b>Permissions.</b> Writing bookmarks and reading the active tab may widen the manifest (<code>tabs</code>/<code>activeTab</code>). Confirm the minimal set; a permissions bump can affect the Web Store review and the install prompt.</li>
+  <li><b>Destructive actions.</b> Delete needs a confirm or undo; the popup closing on open makes an undo toast slightly awkward — decide the UX.</li>
+  <li><b>Scope of the write surface.</b> Adding create/remove makes <code>BookmarkStore</code> stateful about the tree; ensure the cache/hash invalidation still holds after a create or delete.</li>
+  <li><b>Classic vs. modern parity.</b> Decide up front whether new actions appear in the classic look or modern-only.</li>
+  <li><b>Should these be one epic or separate tickets?</b> Recommendation: P1 (add) and P1b (delete/reset) ship independently and first; P2 is a quick standalone; P3 is its own epic that depends on P1.</li>
+</ul>
+
+<h2>8. Definition of done for this spike</h2>
+<ul class="tight">
+  <li>✅ Every feature of the V2 React version is inventoried with a source reference (§4).</li>
+  <li>✅ Each is classified against the current v3 baseline — new / partial / already have (§3–§5).</li>
+  <li>✅ A prioritized, ticket-ready backlog with acceptance criteria and v3 integration points is produced (§6).</li>
+  <li>✅ Non-recommendations and risks are recorded so the decision is reviewable (§6–§7).</li>
+  <li>No product or app code is changed — the spike's output is this report.</li>
+</ul>
+
+<footer>
+  BMX-3 · refinement phase · spike report. Source: <code>bookmark-express-next</code> (V2 React). Target for recommendations: <code>bookmark-express-v3</code>. Recommendations here are inputs to follow-up build tickets, not committed scope.
+</footer>
