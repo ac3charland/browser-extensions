@@ -9,13 +9,26 @@
         results: SearchResult[]
         selectedIndex: number
         hint: string
+        copiedIndex: number
+        copiedSeq: number
         invert: boolean
         oninput: (value: string) => void
         onkeydown: (event: KeyboardEvent) => void
         onopen: (result: SearchResult, mode: OpenMode) => void
     }
 
-    let { query, results, selectedIndex, hint, invert, oninput, onkeydown, onopen }: Props = $props()
+    let {
+        query,
+        results,
+        selectedIndex,
+        hint,
+        copiedIndex,
+        copiedSeq,
+        invert,
+        oninput,
+        onkeydown,
+        onopen,
+    }: Props = $props()
 
     let searchInput = $state<HTMLInputElement>()
 
@@ -42,7 +55,7 @@
     </div>
 </div>
 
-<Results {results} {query} {selectedIndex} {invert} {onopen} />
+<Results {results} {query} {selectedIndex} {copiedIndex} {copiedSeq} {invert} {onopen} />
 
 <style>
     .topbar {
@@ -66,7 +79,7 @@
 
     /* Reserve room on the right so a long query doesn't slide under the hint. */
     .search-bar.with-hint {
-        padding-right: 470px;
+        padding-right: 580px;
     }
 
     .search-row {
