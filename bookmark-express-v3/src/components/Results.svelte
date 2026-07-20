@@ -8,11 +8,13 @@
         results: SearchResult[]
         query: string
         selectedIndex: number
+        copiedIndex: number
+        copiedSeq: number
         invert: boolean
         onopen: (result: SearchResult, mode: OpenMode) => void
     }
 
-    let { results, query, selectedIndex, invert, onopen }: Props = $props()
+    let { results, query, selectedIndex, copiedIndex, copiedSeq, invert, onopen }: Props = $props()
 
     // Element refs so we can keep the keyboard-selected row in view.
     let items = $state<HTMLLIElement[]>([])
@@ -50,6 +52,11 @@
                         <Highlighted text={result.url} {query} />
                     </span>
                 </div>
+                {#if copiedIndex === i}
+                    {#key copiedSeq}
+                        <span class="copied-flash">URL copied</span>
+                    {/key}
+                {/if}
             </li>
         {/each}
     </ul>
@@ -64,6 +71,7 @@
     }
 
     li {
+        position: relative;
         margin: 0;
         padding: 10px;
         overflow-wrap: break-word;
@@ -71,6 +79,37 @@
 
     li.selected {
         background-color: var(--selected-bg);
+    }
+
+    /* "URL copied" badge flashed over a row when Cmd/Ctrl+C copies its URL, then
+       fading out on its own. Re-keyed per copy (copiedSeq) so the fade replays. */
+    .copied-flash {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: Highlight;
+        color: HighlightText;
+        font-family: sans-serif;
+        font-size: 12px;
+        pointer-events: none;
+        animation: copied-fade 1.2s ease-out forwards;
+    }
+
+    @keyframes copied-fade {
+        0% {
+            opacity: 0;
+        }
+        12% {
+            opacity: 1;
+        }
+        60% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
     }
 
     .favicon {

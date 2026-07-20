@@ -68,6 +68,13 @@ async function openPopup(seed = {}, path = 'index.html', waitFor = '.search-bar'
                 },
             ]
             const store = { ...seed }
+            // Record clipboard writes so tests can assert Cmd/Ctrl+C copied the
+            // right URL, without depending on a real clipboard being available.
+            window.__clipboard = []
+            Object.defineProperty(navigator, 'clipboard', {
+                configurable: true,
+                value: { writeText: async (text) => void window.__clipboard.push(text) },
+            })
             // chrome.tabs.create/update and chrome.windows.create need no
             // permission, so mock them always. Record each call so tests can
             // assert new-tab vs same-tab vs incognito behavior.
@@ -139,15 +146,20 @@ check(firstUrl.includes('github'), `expected the full URL shown, got "${firstUrl
 // theme toggle (theme is controlled from the options page only).
 check((await mod.page.locator('.search-wrap svg.search-icon').count()) === 1, 'expected an inline search icon')
 check((await mod.page.locator('.theme-toggle').count()) === 0, 'in-bar theme toggle should be gone')
-check((await mod.page.locator('.footer .kbd').count()) === 5, 'expected 5 footer key hints')
+check((await mod.page.locator('.footer .kbd').count()) === 6, 'expected 6 footer key hints')
 // The footer spells out both Enter and Shift+Enter targets for the default setting,
-// plus the fixed Cmd+Shift+Enter incognito shortcut.
+// the fixed Cmd+Shift+Enter incognito shortcut, and the Cmd+C copy-URL shortcut.
 const footerText = await mod.page.locator('.footer').innerText()
 check(footerText.includes('New tab') && footerText.includes('Same tab'), `footer should show both tab targets, got "${footerText}"`)
 check(footerText.includes('Incognito'), `footer should advertise the incognito shortcut, got "${footerText}"`)
+check(footerText.includes('Copy URL'), `footer should advertise the copy-URL shortcut, got "${footerText}"`)
 check(
     (await mod.page.locator('.footer .kbd', { hasText: '⌘⇧↵' }).count()) === 1,
     'footer should show the ⌘⇧↵ incognito key hint',
+)
+check(
+    (await mod.page.locator('.footer .kbd', { hasText: '⌘C' }).count()) === 1,
+    'footer should show the ⌘C copy-URL key hint',
 )
 // Theme resolves from the setting: 'system' follows the OS (light in this harness).
 check(
@@ -195,6 +207,28 @@ check(
     `Ctrl+Shift+Enter should open an incognito window, got ${JSON.stringify(actions)}`,
 )
 
+// Cmd+C (Ctrl+C on Win/Linux) copies the highlighted row's URL and flashes a
+// "URL copied" overlay on that row. Both chords resolve to the same copy.
+await mod.page.evaluate(() => (window.__clipboard.length = 0))
+const selectedUrl = await mod.page.locator('.row.selected .url').innerText()
+await mod.page.locator('.search-bar').press('Meta+c')
+let clip = await mod.page.evaluate(() => window.__clipboard)
+check(
+    clip.length === 1 && clip[0] === selectedUrl,
+    `Cmd+C should copy the highlighted URL "${selectedUrl}", got ${JSON.stringify(clip)}`,
+)
+check(
+    (await mod.page.locator('.row.selected .copied-flash').innerText()) === 'URL copied',
+    'Cmd+C should flash a "URL copied" overlay on the highlighted row',
+)
+await mod.page.evaluate(() => (window.__clipboard.length = 0))
+await mod.page.locator('.search-bar').press('Control+c')
+clip = await mod.page.evaluate(() => window.__clipboard)
+check(
+    clip.length === 1 && clip[0] === selectedUrl,
+    `Ctrl+C should copy the highlighted URL "${selectedUrl}", got ${JSON.stringify(clip)}`,
+)
+
 // A pinned theme setting overrides the system scheme.
 const dark = await openPopup({ settings: { theme: 'dark' } })
 await dark.page.waitForSelector('.search-bar', { timeout: 5000 })
@@ -214,7 +248,7 @@ check((await cls.page.locator('.row').count()) === 0, 'classic look should not r
 
 const clsHint = await cls.page.locator('.hint').innerText()
 check(
-    clsHint === 'shift + enter to open in same tab · cmd + shift + enter for incognito',
+    clsHint === 'shift + enter to open in same tab · cmd + shift + enter for incognito · cmd + c to copy url',
     `classic hint was "${clsHint}"`,
 )
 
@@ -239,6 +273,20 @@ check(
     actions.length === 1 && actions[0].action === 'window' && actions[0].incognito === true,
     `classic Cmd+Shift+Enter should open an incognito window, got ${JSON.stringify(actions)}`,
 )
+// Copy-to-clipboard is shared behavior too: Cmd+C copies the highlighted URL and
+// flashes the overlay under the classic look as well.
+await cls.page.evaluate(() => (window.__clipboard.length = 0))
+const clsSelectedUrl = await cls.page.locator('li.selected .url').innerText()
+await cls.page.locator('.search-bar').press('Meta+c')
+const clsClip = await cls.page.evaluate(() => window.__clipboard)
+check(
+    clsClip.length === 1 && clsClip[0] === clsSelectedUrl,
+    `classic Cmd+C should copy the highlighted URL "${clsSelectedUrl}", got ${JSON.stringify(clsClip)}`,
+)
+check(
+    (await cls.page.locator('li.selected .copied-flash').innerText()) === 'URL copied',
+    'classic Cmd+C should flash a "URL copied" overlay on the highlighted row',
+)
 
 // --- Scenario: inverted tab behavior (checked against the classic hint copy) --
 const inv = await openPopup({ settings: { invertTabBehavior: true, useClassic: true } })
@@ -247,7 +295,7 @@ await inv.page.waitForSelector('li', { timeout: 5000 })
 
 const invHint = await inv.page.locator('.hint').innerText()
 check(
-    invHint === 'shift + enter to open in new tab · cmd + shift + enter for incognito',
+    invHint === 'shift + enter to open in new tab · cmd + shift + enter for incognito · cmd + c to copy url',
     `inverted hint was "${invHint}"`,
 )
 

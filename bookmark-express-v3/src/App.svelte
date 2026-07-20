@@ -25,6 +25,13 @@
     let selectedIndex = $state(0)
     let settings = $state<Settings>(DEFAULT_SETTINGS)
 
+    // Drives the "URL copied" flash overlay. `copiedIndex` is the row it sits on
+    // (captured at copy time so a later arrow press doesn't move it); `copiedSeq`
+    // increments on every copy so the views can re-key the overlay and replay its
+    // fade even when the same row is copied twice in a row.
+    let copiedIndex = $state(-1)
+    let copiedSeq = $state(0)
+
     // The Shift+Enter hint shown in the classic search bar, kept in sync with the setting.
     let hint = $derived(shiftEnterHint(settings.invertTabBehavior))
 
@@ -67,6 +74,18 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        // Cmd+C (Ctrl+C on Windows/Linux) copies the highlighted bookmark's URL.
+        // Guarded to only fire when a result is highlighted, so with no results the
+        // native copy still works on any text selected in the search bar. Shift is
+        // excluded so it never collides with the Cmd+Shift+Enter incognito chord.
+        if ((event.metaKey || event.ctrlKey) && !event.shiftKey && (event.key === 'c' || event.key === 'C')) {
+            if (results[selectedIndex]) {
+                event.preventDefault()
+                copyUrl(results[selectedIndex], selectedIndex)
+            }
+            return
+        }
+
         switch (event.key) {
             case 'ArrowUp':
                 event.preventDefault()
@@ -88,6 +107,16 @@
     // Hover-to-select (used by the modern view; classic selects via keyboard only).
     function handleHover(index: number) {
         selectedIndex = index
+    }
+
+    // Copy a bookmark's URL to the clipboard and flash the "URL copied" overlay on
+    // its row. The write runs during a keydown (a user gesture) and the manifest
+    // declares "clipboardWrite", so writeText is reliably permitted; the overlay
+    // flashes optimistically alongside it.
+    function copyUrl(result: SearchResult, index: number) {
+        navigator.clipboard?.writeText(result.url)
+        copiedIndex = index
+        copiedSeq++
     }
 
     async function open(result: SearchResult, mode: OpenMode) {
@@ -116,6 +145,8 @@
             {results}
             {selectedIndex}
             {hint}
+            {copiedIndex}
+            {copiedSeq}
             invert={settings.invertTabBehavior}
             oninput={handleInput}
             onkeydown={handleKeydown}
@@ -126,6 +157,8 @@
             {query}
             {results}
             {selectedIndex}
+            {copiedIndex}
+            {copiedSeq}
             invert={settings.invertTabBehavior}
             theme={settings.theme}
             oninput={handleInput}
