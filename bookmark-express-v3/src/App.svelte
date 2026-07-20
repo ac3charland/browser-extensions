@@ -55,6 +55,11 @@
 
     function handleInput(value: string) {
         query = value
+        // The "URL copied" flash is momentary feedback for the copy keystroke, not
+        // state tied to a row. Clear it as soon as the query changes so it can't
+        // reappear when the results list is rebuilt — e.g. editing the search and
+        // then restoring it would otherwise re-mount the badge and replay its fade.
+        copiedIndex = -1
         runSearch()
     }
 

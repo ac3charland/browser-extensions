@@ -229,6 +229,17 @@ check(
     `Ctrl+C should copy the highlighted URL "${selectedUrl}", got ${JSON.stringify(clip)}`,
 )
 
+// The flash is momentary copy feedback, not per-row state: editing the search and
+// restoring it must NOT bring the "URL copied" badge back on the rebuilt list.
+check((await mod.page.locator('.copied-flash').count()) === 1, 'overlay should be present right after copying')
+await mod.page.fill('.search-bar', 'goo')
+await mod.page.fill('.search-bar', 'github')
+await mod.page.waitForSelector('.row', { timeout: 5000 })
+check(
+    (await mod.page.locator('.copied-flash').count()) === 0,
+    'restoring the original search must not resurrect the "URL copied" overlay',
+)
+
 // A pinned theme setting overrides the system scheme.
 const dark = await openPopup({ settings: { theme: 'dark' } })
 await dark.page.waitForSelector('.search-bar', { timeout: 5000 })
