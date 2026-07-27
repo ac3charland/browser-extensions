@@ -14,6 +14,5 @@ body {
 /* Shared highlight color for search hits, applied inside components. */
 :root {
     --search-hit-bg: yellow;
-    --search-hit-fg: inherit;
     --selected-bg: #c2ffba;
 }

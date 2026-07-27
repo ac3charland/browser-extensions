@@ -49,7 +49,7 @@
                     </a>
                     <span class="folder-path">{result.path}</span>
                     <span class="url" title={result.url}>
-                        <Highlighted text={result.url} {query} kind="url" />
+                        <Highlighted text={result.url} {query} />
                     </span>
                 </div>
                 {#if copiedIndex === i}
