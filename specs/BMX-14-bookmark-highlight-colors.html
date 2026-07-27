@@ -1,0 +1,1065 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BMX-14 — Tweak highlight colors for bookmark items and URLs</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #5a5f6a; --line: #e3e6ea;
+    --card: #f7f8fa; --accent: #3f51b5; --accent-fg: #ffffff;
+    --p1: #b3261e; --p2: #b26a00; --p3: #2e7d32; --code-bg: #f0f2f5;
+    --new: #b3261e; --partial: #b26a00; --have: #2e7d32;
+    --field-bg: #ffffff; --field-line: #ccd2da;
+    --ok: #2e7d32; --warn: #b26a00; --bad: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --fg: #e6e8eb; --muted: #9aa0ab; --line: #2a2e37;
+      --card: #1d2027; --accent: #7986cb; --accent-fg: #16181d;
+      --p1: #f2837a; --p2: #e0a94b; --p3: #7fc784; --code-bg: #23262e;
+      --new: #f2837a; --partial: #e0a94b; --have: #7fc784;
+      --field-bg: #23262e; --field-line: #3a3f4a;
+      --ok: #7fc784; --warn: #e0a94b; --bad: #f2837a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; max-width: 900px; padding: 2.5rem 1.25rem 5rem;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 .35rem; text-wrap: balance; }
+  h2 { font-size: 1.35rem; margin: 2.4rem 0 .8rem; padding-top: .6rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.08rem; margin: 1.5rem 0 .4rem; }
+  h4 { font-size: .98rem; margin: 1.1rem 0 .3rem; }
+  p, li { color: var(--fg); }
+  a { color: var(--accent); }
+  code {
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--code-bg); padding: .1em .35em; border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: .9rem 1rem; overflow-x: auto;
+    font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .sub { color: var(--muted); font-size: .95rem; }
+  .meta { margin: .75rem 0 0; display: flex; flex-wrap: wrap; gap: .4rem .9rem; font-size: .9rem; color: var(--muted); }
+  .meta b { color: var(--fg); font-weight: 600; }
+  .callout {
+    background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: 8px; padding: .9rem 1.1rem; margin: 1.2rem 0;
+  }
+  .tocard { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.2rem; }
+  ul.tight { margin: .3rem 0; padding-left: 1.25rem; }
+  ul.tight li { margin: .15rem 0; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; min-width: 640px; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .03em; }
+  .pill {
+    display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+    padding: .12em .5em; border-radius: 999px; white-space: nowrap; text-transform: uppercase;
+  }
+  .pill.new { color: var(--new); border: 1px solid var(--new); }
+  .pill.partial { color: var(--partial); border: 1px solid var(--partial); }
+  .pill.have { color: var(--have); border: 1px solid var(--have); }
+  .ac { margin: .3rem 0 0; padding-left: 1.2rem; }
+  .ac li { margin: .25rem 0; }
+  .ref { font-size: .82rem; color: var(--muted); }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+
+  /* ---- The lab -------------------------------------------------------- */
+  /* The lab breaks out of the 900px reading column — two panels of controls and
+     three popup mock-ups need the room. Clamped to the viewport so the page
+     itself never scrolls sideways. */
+  .lab {
+    border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+    padding: 1.1rem 1.2rem 1.3rem; margin: 1.2rem 0;
+    position: relative; left: 50%; transform: translateX(-50%);
+    width: min(1180px, calc(100vw - 2.5rem));
+  }
+  .lab-bar {
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: .8rem 1.2rem;
+    padding-bottom: .9rem; margin-bottom: 1rem; border-bottom: 1px solid var(--line);
+  }
+  .field { display: flex; flex-direction: column; gap: .25rem; }
+  .field > label, .grp > legend, .lab-label {
+    font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+  }
+  input[type="text"], select {
+    background: var(--field-bg); color: var(--fg);
+    border: 1px solid var(--field-line); border-radius: 6px; padding: .4rem .5rem;
+    font: 13px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  input[type="text"]:focus-visible, select:focus-visible, button:focus-visible,
+  input[type="color"]:focus-visible, input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  input[type="text"].bad { border-color: var(--bad); }
+  button {
+    background: var(--field-bg); color: var(--fg); border: 1px solid var(--field-line);
+    border-radius: 6px; padding: .4rem .7rem; font: inherit; font-size: .84rem; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  .presets { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+  .lab-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2rem; }
+  @media (max-width: 780px) { .lab-grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .grp { border: 1px solid var(--line); border-radius: 10px; padding: .7rem .85rem .85rem; margin: 0 0 .9rem; background: var(--bg); }
+  .grp > legend { padding: 0 .35rem; }
+  .rows { display: flex; flex-direction: column; gap: .45rem; }
+  .row-ctl { display: grid; grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1.25fr); align-items: center; gap: .5rem; }
+  .row-ctl .name { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+  .row-ctl .name span { font-size: .84rem; }
+  .row-ctl .name code { font-size: 11px; background: none; padding: 0; color: var(--muted); }
+  .row-ctl input[type="color"] {
+    width: 30px; height: 30px; padding: 0; border: 1px solid var(--field-line); border-radius: 6px;
+    background: none; cursor: pointer;
+  }
+  .row-ctl input[type="text"] { width: 100%; }
+  .row-ctl.off { opacity: .45; }
+  .inherit-box { display: flex; align-items: center; gap: .3rem; font-size: .78rem; color: var(--muted); white-space: nowrap; }
+  .split { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted); margin: .1rem 0 .6rem; }
+  .contrast { margin-top: .6rem; border-top: 1px dashed var(--line); padding-top: .5rem; display: flex; flex-direction: column; gap: .2rem; }
+  .cline { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; font-size: .8rem; color: var(--muted); }
+  .cline b { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .cline b.ok { color: var(--ok); } .cline b.warn { color: var(--warn); } .cline b.bad { color: var(--bad); }
+
+  /* Preview shells. These deliberately re-create the popup's own CSS so the
+     swatches are judged in situ, not as isolated chips. */
+  .pv { margin-bottom: 1rem; }
+  .pv > .lab-label { display: block; margin-bottom: .35rem; }
+  .shell { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+  .mv {
+    padding: 10px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  .mv .mv-input {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 8px;
+    border-radius: 10px; font-size: 13px;
+  }
+  .mv .mv-list { display: flex; flex-direction: column; gap: 2px; }
+  .mv .mv-row { display: flex; gap: 10px; align-items: flex-start; padding: 9px 11px; border-radius: 10px; cursor: pointer; }
+  .mv .tile {
+    width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
+  }
+  .mv .mv-body { min-width: 0; flex: 1; }
+  .mv .crumb { font-size: 10px; font-weight: 500; margin-bottom: 3px; }
+  .mv .title { font-size: 14px; font-weight: 600; }
+  .mv .url { margin-top: 3px; font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.3; overflow-wrap: break-word; }
+
+  .cv { background: #ffffff; color: #000000; font-family: sans-serif; padding-bottom: 4px; }
+  .cv .cv-input { padding: 8px 10px; font-size: 15px; color: #6b6b6b; border-bottom: 1px solid #e0e0e0; }
+  .cv ul { margin: 0; padding: 0; list-style: none; }
+  .cv li { padding: 8px 10px; overflow-wrap: break-word; cursor: pointer; }
+  .cv .tile { width: 14px; height: 14px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center;
+              vertical-align: top; margin: 2px 8px 0 0; font-size: 8px; font-weight: 700; color: #fff; }
+  .cv .cv-body { display: inline-block; width: calc(100% - 26px); }
+  .cv .title { font-size: 15px; color: #0000ee; }
+  .cv .path { display: block; font-size: 12px; }
+  .cv .url { display: block; font-size: 11px; color: gray; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+
+  .hit { border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .out-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin-top: 1.2rem; }
+  .changed { font-size: .84rem; color: var(--muted); }
+  .changed ul { margin: .25rem 0 0; padding-left: 1.2rem; }
+  .changed code { font-size: 11.5px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<h1>Tweak the highlight colors for bookmark items and URLs</h1>
+<p class="sub">A refinement spec for <code>bookmark-express-v3</code>: promote the search-hit and selected-row colors to a complete, per-theme, per-field token set, then pick the actual values in the interactive lab below before anything is committed.</p>
+
+<div class="meta">
+  <span><b>Ticket:</b> BMX-14</span>
+  <span><b>Phase:</b> refinement</span>
+  <span><b>Target:</b> <code>bookmark-express-v3</code> (Svelte + TS, MV3)</span>
+  <span><b>Type:</b> visual / CSS token change</span>
+  <span><b>Date:</b> 2026-07-26</span>
+</div>
+
+<div class="callout">
+  <b>How to use this document.</b> §1–§4 are the spec: what is wrong today, and the exact token model and code changes that fix it. <b>§5 is a live lab</b> — open this file in a browser, drag the color pickers, and watch real popup mock-ups (modern light, modern dark, classic) update. The lab is what the values were chosen in; <b>§5.1 records the signed-off result</b>, which is what the build session commits verbatim. Nothing in the extension has been changed by this document.
+</div>
+
+<h2>1. TL;DR</h2>
+<div class="tocard">
+  <p style="margin-top:0">Two colors do all the highlighting work in v3 today, and both are under-specified:</p>
+  <ul class="tight">
+    <li>The <b>search-hit</b> background (the swatch behind matched text) — <code>--search-hit-bg: yellow</code> in the classic look, <code>--highlight</code> in the modern look.</li>
+    <li>The <b>selected-row</b> background — <code>--selected-bg: #c2ffba</code> in classic, <code>--selected</code> in modern.</li>
+  </ul>
+  <p>The gaps: the <b>ink color on a hit is hard-coded</b> (modern) or <b>inherited by accident</b> (classic, where a URL hit lands as gray-on-yellow); <b>titles and URLs cannot be tuned apart</b>, though a URL hit wants to be quieter than a title hit; and the <b>classic tokens have no dark variant at all</b>.</p>
+  <p style="margin-bottom:0">The change: expand the two tokens into a five-token family per surface — <b>hit background, hit ink, URL hit background, URL hit ink, selected row</b> — with the URL pair falling back to the title pair when unset, so splitting them stays purely additive. Values were chosen in the lab (§5); <b>the signed-off set is §5.1</b> — four colours move, the URL split is deliberately not taken this time.</p>
+</div>
+
+<h2>2. Where these colors live today</h2>
+<p>v3 renders one of two looks from the same controller (<code>src/App.svelte</code>): the <b>modern</b> command-palette popup and the original <b>classic</b> list. They do not share highlight styling, so the change lands in two places.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>What</th><th>Token &amp; value today</th><th>Defined in</th><th>Consumed by</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>Classic</b> — hit background</td>
+      <td><code>--search-hit-bg: yellow</code></td>
+      <td><code>src/app.css</code> <code>:root</code></td>
+      <td><code>components/Highlighted.svelte</code> <code>.search-hit</code></td>
+    </tr>
+    <tr>
+      <td><b>Classic</b> — hit ink</td>
+      <td><em>none</em> — inherits the row (link blue on titles, <code>gray</code> on URLs)</td>
+      <td>—</td>
+      <td><code>components/Results.svelte</code> <code>.bookmark-link</code>, <code>.url</code></td>
+    </tr>
+    <tr>
+      <td><b>Classic</b> — selected row</td>
+      <td><code>--selected-bg: #c2ffba</code></td>
+      <td><code>src/app.css</code> <code>:root</code></td>
+      <td><code>components/Results.svelte</code> <code>li.selected</code></td>
+    </tr>
+    <tr>
+      <td><b>Modern</b> — hit background</td>
+      <td><code>--highlight: oklch(0.86 0.14 95)</code> light · <code>oklch(0.76 0.17 95)</code> dark</td>
+      <td><code>components/ModernView.svelte</code> <code>&lt;style&gt;</code>, keyed on <code>html[data-theme]</code></td>
+      <td>same file, <code>.search-hit</code></td>
+    </tr>
+    <tr>
+      <td><b>Modern</b> — hit ink</td>
+      <td><code>color: oklch(0.15 0 0)</code> — hard-coded in the rule, identical in both themes</td>
+      <td><code>components/ModernView.svelte</code> <code>.search-hit</code></td>
+      <td>same rule</td>
+    </tr>
+    <tr>
+      <td><b>Modern</b> — selected row</td>
+      <td><code>--selected: oklch(0.92 0.05 145)</code> light · <code>oklch(0.36 0.05 145)</code> dark</td>
+      <td><code>components/ModernView.svelte</code> <code>&lt;style&gt;</code></td>
+      <td>same file, <code>.row.selected</code></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p class="ref">Note the two looks already disagree on convention: modern states its palette in <code>oklch()</code> inside the component and switches on <code>html[data-theme]</code> (set from the <code>theme</code> setting in <code>lib/settings.ts</code>); classic keeps two flat hex/keyword values in the global <code>app.css</code> and has no theme switch. This spec keeps each convention where it is rather than unifying them — see §8.</p>
+
+<h2>3. What's actually wrong</h2>
+<ul class="tight">
+  <li><b>URL hits are the worst case and nobody tuned them.</b> In classic, the URL line is <code>color: gray</code>; a hit inside it paints <code>yellow</code> behind that gray — the lowest-contrast text in the popup sitting on the loudest background. In modern the URL is <code>var(--sub)</code> but a hit forcibly switches it to near-black on amber, so the URL line changes weight mid-string.</li>
+  <li><b>The hit ink is not a token.</b> <code>oklch(0.15 0 0)</code> is written directly into modern's <code>.search-hit</code>, so it cannot differ between light and dark even though the backgrounds do, and it cannot be tuned without editing a rule.</li>
+  <li><b>Titles and URLs share one color.</b> There is no way to make a URL hit quieter than a title hit, which is the most likely thing to want here.</li>
+  <li><b>Hits inside a selected row are an untested combination.</b> A hit swatch is drawn over <code>--selected</code>, not over the popup background, and the two were chosen independently (amber hits, green selection). The lab below always renders one selected row so this pairing is judged, not assumed.</li>
+  <li><b>Classic has no dark story.</b> <code>yellow</code> and <code>#c2ffba</code> are emitted regardless of scheme, while the surrounding classic chrome uses system colors (<code>Canvas</code>, <code>GrayText</code>) that <em>do</em> flip. Deciding this is in scope; see the open question in §8.</li>
+</ul>
+
+<h2>4. The change</h2>
+<h3>4.1 Token model</h3>
+<p>Each surface gets the same five roles. The URL pair is optional: components read it with a fallback, so leaving it undefined reproduces today's "URL looks like a title" behavior exactly.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Role</th><th>Classic (<code>app.css :root</code>)</th><th>Modern (<code>ModernView.svelte</code>, per theme)</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Hit background (title)</td><td><code>--search-hit-bg</code></td><td><code>--highlight</code></td><td><span class="pill have">exists</span></td></tr>
+    <tr><td>Hit ink (title)</td><td><code>--search-hit-fg</code></td><td><code>--highlight-fg</code></td><td><span class="pill new">new</span></td></tr>
+    <tr><td>Hit background (URL)</td><td><code>--search-hit-url-bg</code></td><td><code>--highlight-url</code></td><td><span class="pill new">new, optional</span></td></tr>
+    <tr><td>Hit ink (URL)</td><td><code>--search-hit-url-fg</code></td><td><code>--highlight-url-fg</code></td><td><span class="pill new">new, optional</span></td></tr>
+    <tr><td>Selected row</td><td><code>--selected-bg</code></td><td><code>--selected</code></td><td><span class="pill have">exists</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>4.2 Code changes</h3>
+<p><b><code>components/Highlighted.svelte</code></b> (classic) gains a <code>kind</code> prop so a URL hit can be styled apart from a title hit. Default <code>'title'</code> keeps every existing call site working.</p>
+<pre><code>let { text, query, kind = 'title' }:
+    { text: string; query: string; kind?: 'title' | 'url' } = $props()
+
+&lt;span class="search-hit" class:url={kind === 'url'}&gt;{segment.text}&lt;/span&gt;
+
+.search-hit {
+    background-color: var(--search-hit-bg);
+    color: var(--search-hit-fg, inherit);
+}
+.search-hit.url {
+    background-color: var(--search-hit-url-bg, var(--search-hit-bg));
+    color: var(--search-hit-url-fg, var(--search-hit-fg, inherit));
+}</code></pre>
+
+<p><b><code>components/Results.svelte</code></b> passes the kind on the URL instance only: <code>&lt;Highlighted text={result.url} {query} kind="url" /&gt;</code>.</p>
+
+<p><b><code>components/ModernView.svelte</code></b> takes the same treatment inside its own <code>highlighted</code> snippet, which is already parameterised by text:</p>
+<pre><code>{#snippet highlighted(text: string, kind: 'title' | 'url')}…
+    &lt;span class="search-hit" class:url={kind === 'url'}&gt;{seg.text}&lt;/span&gt;…{/snippet}
+
+{@render highlighted(result.title, 'title')}
+{@render highlighted(result.url, 'url')}
+
+.search-hit {
+    background: var(--highlight);
+    color: var(--highlight-fg);
+    border-radius: 2px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+.search-hit.url {
+    background: var(--highlight-url, var(--highlight));
+    color: var(--highlight-url-fg, var(--highlight-fg));
+}</code></pre>
+<p class="ref">The hard-coded <code>color: oklch(0.15 0 0)</code> is replaced by <code>--highlight-fg</code>, declared in both the <code>html[data-theme='light']</code> and <code>html[data-theme='dark']</code> blocks alongside <code>--highlight</code> and <code>--selected</code>. Everything else in those rules (radius, <code>box-decoration-break</code>) stays as-is.</p>
+
+<p><b><code>src/app.css</code></b> declares the classic family in the existing <code>:root</code> block, next to the two tokens already there.</p>
+
+<h2>5. The lab — pick the values</h2>
+<p>Every control below writes straight into the mock-ups. The mock-ups reuse v3's real markup, spacing and type sizes, and the real matching logic from <code>lib/highlight.ts</code> (query words of 2+ characters, case-insensitive), so what you see is what the popup renders. Row&nbsp;2 is selected by default — click any row to move the selection and check hits-on-selection.</p>
+
+<div class="lab" id="lab">
+  <div class="lab-bar">
+    <div class="field">
+      <label for="q">Sample query</label>
+      <input type="text" id="q" value="doc chrome" size="18">
+    </div>
+    <div class="field">
+      <span class="lab-label">Start from</span>
+      <div class="presets" id="presets"></div>
+    </div>
+  </div>
+
+  <div class="lab-grid">
+    <div id="controls"></div>
+    <div id="previews"></div>
+  </div>
+
+  <div class="out-head">
+    <span class="lab-label">What to commit</span>
+    <div class="presets">
+      <button type="button" id="copy-css">Copy CSS</button>
+      <button type="button" class="primary" id="copy-values">Copy values</button>
+    </div>
+  </div>
+  <pre id="out"><code></code></pre>
+  <div class="changed" id="changed"></div>
+</div>
+
+<h3>5.1 Signed off — commit exactly these</h3>
+<p>Chosen from the lab on 2026-07-27 (sample query <code>doc chrome</code>). The lab above loads with these applied. <b>Four values change; everything else stays as it ships today.</b></p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Surface</th><th>Token</th><th>Commit</th><th>Was</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3"><b>Modern · Light</b><br><span class="ref"><code>html[data-theme='light']</code></span></td>
+        <td><code>--highlight</code></td><td><code>oklch(0.883 0.181 94.5)</code></td><td><code>oklch(0.86 0.14 95)</code></td></tr>
+    <tr><td><code>--highlight-fg</code> <span class="pill new">new</span></td><td><code>oklch(0.15 0 0)</code></td><td><em>literal in <code>.search-hit</code></em></td></tr>
+    <tr><td><code>--selected</code></td><td><code>oklch(0.831 0.158 144)</code></td><td><code>oklch(0.92 0.05 145)</code></td></tr>
+    <tr><td rowspan="3"><b>Modern · Dark</b><br><span class="ref"><code>html[data-theme='dark']</code></span></td>
+        <td><code>--highlight</code></td><td><code>oklch(0.831 0.168 93.7)</code></td><td><code>oklch(0.76 0.17 95)</code></td></tr>
+    <tr><td><code>--highlight-fg</code> <span class="pill new">new</span></td><td><code>oklch(0.15 0 0)</code></td><td><em>literal in <code>.search-hit</code></em></td></tr>
+    <tr><td><code>--selected</code></td><td><code>oklch(0.419 0.097 144.3)</code></td><td><code>oklch(0.36 0.05 145)</code></td></tr>
+    <tr><td rowspan="3"><b>Classic</b><br><span class="ref"><code>app.css :root</code></span></td>
+        <td><code>--search-hit-bg</code></td><td><code>yellow</code></td><td><span class="pill have">unchanged</span></td></tr>
+    <tr><td><code>--search-hit-fg</code> <span class="pill new">new</span></td><td><code>inherit</code></td><td><em>implicit</em></td></tr>
+    <tr><td><code>--selected-bg</code></td><td><code>#c2ffba</code></td><td><span class="pill have">unchanged</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><b>The URL split is not taken.</b> No <code>--highlight-url</code> / <code>--search-hit-url-*</code> tokens are declared, so URL hits keep rendering exactly like title hits. The <code>kind</code> prop and the <code>.search-hit.url</code> rules from §4.2 are still built — that is what makes the split a one-line addition later — but they resolve through the fallback to the title tokens, so this ships as a no-op for URLs.</p>
+
+<div class="callout">
+  <b>Contrast check — one pair ships below AA.</b> Per the criterion in §6, every ink/background pair was measured against the signed-off values:
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Pair</th><th>Light</th><th>Dark</th></tr></thead>
+    <tbody>
+      <tr><td>Hit ink on hit background <span class="ref">(the criterion)</span></td><td><b>13.84:1</b> ✅</td><td><b>11.69:1</b> ✅</td></tr>
+      <tr><td>Title on selected row</td><td>10.90:1 ✅</td><td>7.06:1 ✅</td></tr>
+      <tr><td>URL / breadcrumb (<code>--sub</code>) on selected row</td><td><b>3.44:1</b> ⚠️ <span class="ref">(was 4.41:1)</span></td><td><b>2.63:1</b> ⚠️ <span class="ref">(was 3.43:1)</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="margin-bottom:0"><b>Accepted, with the reason:</b> the new selection greens are deliberately bolder, which costs contrast for the muted <code>--sub</code> ink used by the URL line and breadcrumb <em>on the selected row only</em>. Dark was already under AA here (3.43:1) and gets worse; light drops under for the first time. This affects secondary metadata on a single transient row, not the title or the hits, and <code>--sub</code> is out of scope for this ticket. <b>If it should be fixed instead of accepted, the cheap remedy is a dedicated <code>--sub-on-selected</code> ink</b> rather than walking the greens back — file it as a follow-up.</p>
+</div>
+
+<p class="ref"><b>Gamut:</b> all six modern values convert cleanly into sRGB with no channel clipping, so the rendered colour matches the number written. Light <code>--highlight</code> resolves to <code>#ffd501</code> and <code>--selected</code> to <code>#83e283</code>; dark resolves to <code>#ecc411</code> and <code>#265a28</code>.</p>
+
+<h2>6. Acceptance criteria</h2>
+<ul class="ac">
+  <li>The five-role token family from §4.1 exists for both looks: classic tokens in <code>src/app.css</code> <code>:root</code>, modern tokens declared in <b>both</b> the <code>html[data-theme='light']</code> and <code>html[data-theme='dark']</code> blocks of <code>ModernView.svelte</code>.</li>
+  <li>No highlight or selection color is written as a literal inside a rule any more — in particular <code>.search-hit</code>'s <code>color: oklch(0.15 0 0)</code> is gone, replaced by <code>var(--highlight-fg)</code>.</li>
+  <li>A hit inside a <b>URL</b> can be styled independently of a hit inside a <b>title</b>, in both looks, via the URL tokens; when those tokens are absent the URL hit renders identically to a title hit (fallback chain in §4.2).</li>
+  <li>The committed values are <b>exactly the nine in the §5.1 table</b>, character for character — four of them change what ships, the rest are the current values restated as tokens. No other colour moves.</li>
+  <li>The URL tokens are <b>not</b> declared (§5.1): a URL hit renders identically to a title hit through the fallback chain, in both looks. Removing the URL tokens from the output is not the same as removing the <code>kind</code> plumbing, which still ships.</li>
+  <li>Hit ink on its hit background meets <b>WCAG AA (4.5:1)</b> in every theme that ships — measured at 13.84:1 light and 11.69:1 dark. The one pair below AA (<code>--sub</code> on a selected row) is the known, accepted exception documented in §5.1 and must be repeated in the build PR description.</li>
+  <li>Highlighting behaviour is unchanged: same segments matched, same <code>box-decoration-break: clone</code> on multi-line matches, same 2px radius, no layout shift (no padding added to <code>.search-hit</code>).</li>
+  <li>Both looks still render correctly with the modern theme setting on <b>System</b>, <b>Light</b> and <b>Dark</b>, and switching theme on the options page updates an open popup live (existing <code>chrome.storage.onChanged</code> path).</li>
+  <li><code>npm run check</code> and <code>npm run build</code> pass in <code>bookmark-express-v3/</code>.</li>
+</ul>
+
+<h2>7. Files touched</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>File</th><th>Change</th></tr></thead>
+  <tbody>
+    <tr><td><code>bookmark-express-v3/src/app.css</code></td><td>Classic family: retune <code>--search-hit-bg</code> / <code>--selected-bg</code>, add <code>--search-hit-fg</code> and the two URL tokens.</td></tr>
+    <tr><td><code>bookmark-express-v3/src/components/Highlighted.svelte</code></td><td>Add the <code>kind</code> prop; add <code>.search-hit.url</code>; read ink from a token.</td></tr>
+    <tr><td><code>bookmark-express-v3/src/components/Results.svelte</code></td><td>Pass <code>kind="url"</code> to the URL <code>&lt;Highlighted&gt;</code>.</td></tr>
+    <tr><td><code>bookmark-express-v3/src/components/ModernView.svelte</code></td><td>Add <code>--highlight-fg</code> (+ optional URL tokens) to both theme blocks; retune <code>--highlight</code> / <code>--selected</code>; parameterise the <code>highlighted</code> snippet by kind; drop the literal ink.</td></tr>
+    <tr><td><code>bookmark-express-v3/package.json</code></td><td>Patch version bump, per the repo's habit of shipping a version with each user-visible change.</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="ref">Not touched: <code>lib/highlight.ts</code> (matching logic is unchanged), <code>lib/settings.ts</code> (no new setting), the manifest, and the store assets.</p>
+
+<h2>8. Out of scope &amp; open questions</h2>
+<ul class="tight">
+  <li><b>Out of scope — a shared palette file.</b> Classic keeps its tokens in <code>app.css</code>, modern keeps its <code>oklch</code> palette inside <code>ModernView.svelte</code>. Merging the two into one theme module is a worthwhile cleanup and a separate ticket.</li>
+  <li><b>Out of scope — a user-facing setting</b> for highlight color. These stay build-time tokens.</li>
+  <li><b>Resolved — classic keeps today's colors and stays single-scheme.</b> Its values are unchanged in §5.1; it gains only <code>--search-hit-fg: inherit</code>, which restates the current behaviour as a token. A dark variant for classic, and the gray-on-yellow URL hit it would fix (3.68:1 today), are <b>not</b> addressed here — worth a follow-up ticket.</li>
+  <li><b>Resolved — the selected-row colors do move.</b> Both modern greens were retuned along with the hit swatches, since the two are judged as a pair. This is the source of the accepted contrast exception in §5.1.</li>
+  <li><b>Follow-up candidate — <code>--sub</code> on a selected row.</b> A dedicated ink for secondary metadata on the selected row would clear AA in both themes without touching the greens just agreed. Out of scope here; see §5.1.</li>
+</ul>
+
+<h2>9. Definition of done for this refinement</h2>
+<ul class="tight">
+  <li>✅ Every place a highlight or selection color is defined or consumed in v3 is inventoried, with file references (§2).</li>
+  <li>✅ The concrete defects are named, including the ones the ticket title does not mention (§3).</li>
+  <li>✅ A token model and the exact component edits are specified, with fallbacks so the URL split is additive (§4).</li>
+  <li>✅ An interactive lab lets the values be chosen and exported before any code is written (§5).</li>
+  <li>✅ The chosen values are signed off and recorded verbatim, with contrast and sRGB-gamut verification and one explicitly accepted exception (§5.1).</li>
+  <li>✅ Acceptance criteria, files touched, and resolved/open questions are recorded (§6–§8).</li>
+  <li>No app or source changes are made by this document — the build ticket applies §5.1.</li>
+</ul>
+
+<footer>
+  BMX-14 · refinement phase · spec. Target: <code>bookmark-express-v3</code>. Values signed off 2026-07-27 and recorded in §5.1; the build ticket applies them verbatim. No extension code is changed by this document.
+</footer>
+
+<script>
+(() => {
+    'use strict'
+
+    /* ---------- color plumbing ---------------------------------------- */
+
+    const NAMED_PROBE = document.createElement('span')
+    NAMED_PROBE.style.display = 'none'
+    document.body.appendChild(NAMED_PROBE)
+
+    function srgbToLinear(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) }
+    function linearToSrgb(c) {
+        const v = c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055
+        return Math.max(0, Math.min(255, Math.round(v * 255)))
+    }
+
+    function rgbToOklch({ r, g, b }) {
+        const R = srgbToLinear(r), G = srgbToLinear(g), B = srgbToLinear(b)
+        const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B)
+        const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B)
+        const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B)
+        const L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
+        const A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+        const Bb = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+        let h = (Math.atan2(Bb, A) * 180) / Math.PI
+        if (h < 0) h += 360
+        return { L, C: Math.hypot(A, Bb), h }
+    }
+
+    function oklchToRgb({ L, C, h }) {
+        const hr = (h * Math.PI) / 180
+        const a = C * Math.cos(hr), b = C * Math.sin(hr)
+        const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3)
+        const m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3)
+        const s = Math.pow(L - 0.0894841775 * a - 1.2914855480 * b, 3)
+        return {
+            r: linearToSrgb(+4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+            g: linearToSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+            b: linearToSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s),
+        }
+    }
+
+    // Parse anything CSS-shaped into sRGB. oklch() is handled directly (so the
+    // repo's own values round-trip exactly); everything else goes through the
+    // browser via a probe element.
+    function parseColor(value) {
+        const str = String(value).trim()
+        if (!str) return null
+
+        let m = /^#([0-9a-f]{3,8})$/i.exec(str)
+        if (m) {
+            let hex = m[1]
+            if (hex.length === 3 || hex.length === 4) hex = hex.slice(0, 3).split('').map((c) => c + c).join('')
+            if (hex.length < 6) return null
+            return {
+                r: parseInt(hex.slice(0, 2), 16),
+                g: parseInt(hex.slice(2, 4), 16),
+                b: parseInt(hex.slice(4, 6), 16),
+            }
+        }
+
+        m = /^oklch\(\s*([\d.]+%?)\s+([\d.]+%?)\s+(-?[\d.]+)(?:deg)?\s*(?:\/[^)]*)?\)$/i.exec(str)
+        if (m) {
+            const num = (t, pctScale) => (t.endsWith('%') ? (parseFloat(t) / 100) * pctScale : parseFloat(t))
+            return oklchToRgb({ L: num(m[1], 1), C: num(m[2], 0.4), h: parseFloat(m[3]) })
+        }
+
+        NAMED_PROBE.style.color = ''
+        NAMED_PROBE.style.color = str
+        if (!NAMED_PROBE.style.color) return null
+        const computed = getComputedStyle(NAMED_PROBE).color
+        const rgb = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i.exec(computed)
+        if (rgb) return { r: +rgb[1], g: +rgb[2], b: +rgb[3] }
+        return str === computed ? null : parseColor(computed)
+    }
+
+    const isValid = (v) => parseColor(v) !== null
+    const toHex = (rgb) => '#' + [rgb.r, rgb.g, rgb.b].map((c) => c.toString(16).padStart(2, '0')).join('')
+    const trim = (n, places) => String(parseFloat(n.toFixed(places)))
+
+    function hexToOklchString(hex) {
+        const { L, C, h } = rgbToOklch(parseColor(hex))
+        return `oklch(${trim(L, 3)} ${trim(C, 3)} ${C < 0.001 ? 0 : trim(h, 1)})`
+    }
+
+    function relLum(rgb) {
+        return 0.2126 * srgbToLinear(rgb.r) + 0.7152 * srgbToLinear(rgb.g) + 0.0722 * srgbToLinear(rgb.b)
+    }
+    function contrast(a, b) {
+        const x = parseColor(a), y = parseColor(b)
+        if (!x || !y) return null
+        const l1 = relLum(x), l2 = relLum(y)
+        const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1]
+        return (hi + 0.05) / (lo + 0.05)
+    }
+
+    /* ---------- the matcher, ported from lib/highlight.ts -------------- */
+
+    function highlight(text, query) {
+        if (!text) return []
+        const parts = query.trim().split(/\s+/).filter((p) => p.length > 1)
+        if (parts.length === 0) return [{ text, hit: false }]
+        const escaped = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        const pattern = new RegExp('(' + escaped.join('|') + ')', 'gi')
+        const lower = parts.map((p) => p.toLowerCase())
+        return text
+            .split(pattern)
+            .filter((chunk) => chunk.length > 0)
+            .map((chunk) => ({ text: chunk, hit: lower.includes(chunk.toLowerCase()) }))
+    }
+
+    /* ---------- token model ------------------------------------------- */
+
+    // Fixed colors the popup already ships. Not editable here — they are the
+    // grounds the tunable colors have to work against.
+    const GROUND = {
+        modernLight: { bg: 'oklch(1 0 0)', text: 'oklch(0.22 0.01 90)', sub: 'oklch(0.52 0.01 90)',
+                       inputBg: 'oklch(0.97 0.003 90)', tileBg: 'transparent', tileFg: 'oklch(0.45 0 0)', border: 'oklch(0.9 0.005 90)' },
+        modernDark:  { bg: 'oklch(0.22 0.012 250)', text: 'oklch(0.95 0.005 250)', sub: 'oklch(0.66 0.012 250)',
+                       inputBg: 'oklch(0.28 0.014 250)', tileBg: 'oklch(0.9 0.005 250)', tileFg: 'oklch(0.3 0 0)', border: 'oklch(0.34 0.012 250)' },
+        classic:     { bg: '#ffffff', text: '#000000', sub: 'gray', link: '#0000ee' },
+    }
+
+    const GROUPS = [
+        {
+            key: 'modernLight', label: 'Modern · Light', out: 'oklch', file: "ModernView.svelte — html[data-theme='light']",
+            tokens: [
+                { key: 'hitBg',  css: '--highlight',        label: 'Title hit background', current: 'oklch(0.86 0.14 95)' },
+                { key: 'hitFg',  css: '--highlight-fg',     label: 'Title hit ink',        current: 'oklch(0.15 0 0)', isNew: true },
+                { key: 'urlBg',  css: '--highlight-url',    label: 'URL hit background',   current: 'oklch(0.86 0.14 95)', isNew: true, url: true },
+                { key: 'urlFg',  css: '--highlight-url-fg', label: 'URL hit ink',          current: 'oklch(0.15 0 0)', isNew: true, url: true },
+                { key: 'sel',    css: '--selected',         label: 'Selected row',         current: 'oklch(0.92 0.05 145)' },
+            ],
+        },
+        {
+            key: 'modernDark', label: 'Modern · Dark', out: 'oklch', file: "ModernView.svelte — html[data-theme='dark']",
+            tokens: [
+                { key: 'hitBg',  css: '--highlight',        label: 'Title hit background', current: 'oklch(0.76 0.17 95)' },
+                { key: 'hitFg',  css: '--highlight-fg',     label: 'Title hit ink',        current: 'oklch(0.15 0 0)', isNew: true },
+                { key: 'urlBg',  css: '--highlight-url',    label: 'URL hit background',   current: 'oklch(0.76 0.17 95)', isNew: true, url: true },
+                { key: 'urlFg',  css: '--highlight-url-fg', label: 'URL hit ink',          current: 'oklch(0.15 0 0)', isNew: true, url: true },
+                { key: 'sel',    css: '--selected',         label: 'Selected row',         current: 'oklch(0.36 0.05 145)' },
+            ],
+        },
+        {
+            key: 'classic', label: 'Classic', out: 'hex', file: 'app.css — :root',
+            tokens: [
+                { key: 'hitBg',  css: '--search-hit-bg',      label: 'Title hit background', current: 'yellow' },
+                { key: 'hitFg',  css: '--search-hit-fg',      label: 'Title hit ink',        current: 'inherit', inheritsAs: GROUND.classic.link, isNew: true },
+                { key: 'urlBg',  css: '--search-hit-url-bg',  label: 'URL hit background',   current: 'yellow', isNew: true, url: true },
+                { key: 'urlFg',  css: '--search-hit-url-fg',  label: 'URL hit ink',          current: 'inherit', inheritsAs: GROUND.classic.sub, isNew: true, url: true },
+                { key: 'sel',    css: '--selected-bg',        label: 'Selected row',         current: '#c2ffba' },
+            ],
+        },
+    ]
+
+    // "Today" is the shipped state; "Signed off" is the decision recorded in
+    // §5.1 and is what the lab loads with. The rest are opinions to react to,
+    // kept so the values can be re-opened if the decision is revisited.
+    const PRESETS = {
+        'Signed off': {
+            split: false,
+            values: {
+                modernLight: { hitBg: 'oklch(0.883 0.181 94.5)', hitFg: 'oklch(0.15 0 0)', urlBg: 'oklch(0.883 0.181 94.5)', urlFg: 'oklch(0.15 0 0)', sel: 'oklch(0.831 0.158 144)' },
+                modernDark:  { hitBg: 'oklch(0.831 0.168 93.7)', hitFg: 'oklch(0.15 0 0)', urlBg: 'oklch(0.831 0.168 93.7)', urlFg: 'oklch(0.15 0 0)', sel: 'oklch(0.419 0.097 144.3)' },
+                classic:     { hitBg: 'yellow', hitFg: 'inherit', urlBg: 'yellow', urlFg: 'inherit', sel: '#c2ffba' },
+            },
+        },
+        Today: null,
+        'Softer amber': {
+            split: true,
+            values: {
+                modernLight: { hitBg: 'oklch(0.89 0.11 88)', hitFg: 'oklch(0.28 0.04 88)', urlBg: 'oklch(0.93 0.06 88)', urlFg: 'oklch(0.35 0.03 88)', sel: 'oklch(0.94 0.03 145)' },
+                modernDark:  { hitBg: 'oklch(0.72 0.14 88)', hitFg: 'oklch(0.2 0.03 88)',  urlBg: 'oklch(0.55 0.09 88)', urlFg: 'oklch(0.96 0.01 88)', sel: 'oklch(0.34 0.04 145)' },
+                classic:     { hitBg: '#ffe680', hitFg: '#3a2c00', urlBg: '#fff2bf', urlFg: '#4a3b12', sel: '#d8f5d2' },
+            },
+        },
+        'Cool accent': {
+            split: true,
+            values: {
+                modernLight: { hitBg: 'oklch(0.86 0.09 240)', hitFg: 'oklch(0.25 0.05 240)', urlBg: 'oklch(0.92 0.05 240)', urlFg: 'oklch(0.33 0.04 240)', sel: 'oklch(0.95 0.02 240)' },
+                modernDark:  { hitBg: 'oklch(0.62 0.14 240)', hitFg: 'oklch(0.98 0.01 240)', urlBg: 'oklch(0.45 0.09 240)', urlFg: 'oklch(0.95 0.01 240)', sel: 'oklch(0.32 0.04 240)' },
+                classic:     { hitBg: '#bcd9ff', hitFg: '#10305c', urlBg: '#dcebff', urlFg: '#1d3f6b', sel: '#e6eefc' },
+            },
+        },
+        'Low-key': {
+            split: true,
+            values: {
+                modernLight: { hitBg: 'oklch(0.9 0.03 95)', hitFg: 'oklch(0.25 0.01 95)', urlBg: 'oklch(0.94 0.02 95)', urlFg: 'oklch(0.4 0.01 95)', sel: 'oklch(0.96 0.01 250)' },
+                modernDark:  { hitBg: 'oklch(0.5 0.04 95)', hitFg: 'oklch(0.97 0.005 95)', urlBg: 'oklch(0.4 0.03 95)', urlFg: 'oklch(0.92 0.005 95)', sel: 'oklch(0.3 0.012 250)' },
+                classic:     { hitBg: '#efe6c2', hitFg: '#2f2a14', urlBg: '#f4efdc', urlFg: '#413a20', sel: '#eef1ee' },
+            },
+        },
+    }
+
+    const state = {}
+    const split = {}
+    const inherit = {}
+    for (const g of GROUPS) {
+        state[g.key] = {}
+        split[g.key] = false
+        inherit[g.key] = {}
+        for (const t of g.tokens) {
+            state[g.key][t.key] = t.current
+            if (t.inheritsAs) inherit[g.key][t.key] = true
+        }
+    }
+
+    // The color a token actually paints with, resolved the way the CSS fallback
+    // chain resolves it: an unsplit URL token borrows the title token's value…
+    function effective(groupKey, tokenKey) {
+        const g = GROUPS.find((x) => x.key === groupKey)
+        const t = g.tokens.find((x) => x.key === tokenKey)
+        const source = t.url && !split[groupKey] ? (tokenKey === 'urlBg' ? 'hitBg' : 'hitFg') : tokenKey
+        // …but a borrowed `inherit` still resolves against the line it lands on,
+        // so today's classic URL hit is gray-on-yellow even though the title hit
+        // on the same token is link-blue-on-yellow.
+        if (inherit[groupKey][source]) return t.inheritsAs ?? state[groupKey][source]
+        return state[groupKey][source]
+    }
+
+    function outputValue(group, token) {
+        const raw = state[group.key][token.key]
+        if (inherit[group.key][token.key]) return 'inherit'
+        if (raw === token.current) return raw // untouched: emit the literal we started from
+        const value = raw.trim()
+        // Each surface keeps its own convention: modern states colors in oklch()
+        // inside the component, classic keeps flat hex in app.css.
+        if (group.out === 'oklch') return /^oklch\(/i.test(value) ? value : hexToOklchString(value)
+        return value.startsWith('#') ? value : toHex(parseColor(value))
+    }
+
+    /* ---------- controls ---------------------------------------------- */
+
+    const controls = document.getElementById('controls')
+    const previews = document.getElementById('previews')
+    const el = (tag, cls, text) => {
+        const node = document.createElement(tag)
+        if (cls) node.className = cls
+        if (text != null) node.textContent = text
+        return node
+    }
+
+    const swatches = {}, textFields = {}, rowEls = {}, contrastEls = {}
+
+    for (const g of GROUPS) {
+        const fs = el('fieldset', 'grp')
+        const legend = el('legend', null, g.label)
+        fs.appendChild(legend)
+
+        const splitLabel = el('label', 'split')
+        const splitBox = document.createElement('input')
+        splitBox.type = 'checkbox'
+        splitBox.id = `split-${g.key}`
+        splitLabel.appendChild(splitBox)
+        splitLabel.appendChild(el('span', null, 'Give URL hits their own color'))
+        fs.appendChild(splitLabel)
+
+        const rows = el('div', 'rows')
+        swatches[g.key] = {}; textFields[g.key] = {}; rowEls[g.key] = {}
+
+        for (const t of g.tokens) {
+            const row = el('div', 'row-ctl')
+            const color = document.createElement('input')
+            color.type = 'color'
+            color.setAttribute('aria-label', `${g.label} — ${t.label}`)
+            const name = el('div', 'name')
+            name.appendChild(el('span', null, t.label))
+            name.appendChild(el('code', null, t.css + (t.isNew ? ' (new)' : '')))
+            const text = document.createElement('input')
+            text.type = 'text'
+            text.size = 20
+            text.setAttribute('aria-label', `${g.label} — ${t.label} value`)
+
+            const right = el('div')
+            right.style.display = 'flex'
+            right.style.alignItems = 'center'
+            right.style.gap = '.4rem'
+            right.appendChild(text)
+
+            if (t.inheritsAs) {
+                const wrap = el('label', 'inherit-box')
+                const box = document.createElement('input')
+                box.type = 'checkbox'
+                box.checked = true
+                wrap.appendChild(box)
+                wrap.appendChild(el('span', null, 'inherit'))
+                right.appendChild(wrap)
+                box.addEventListener('change', () => {
+                    inherit[g.key][t.key] = box.checked
+                    if (!box.checked && state[g.key][t.key] === 'inherit') {
+                        state[g.key][t.key] = toHex(parseColor(t.inheritsAs))
+                    }
+                    render()
+                })
+            }
+
+            row.appendChild(color)
+            row.appendChild(name)
+            row.appendChild(right)
+            rows.appendChild(row)
+
+            swatches[g.key][t.key] = color
+            textFields[g.key][t.key] = text
+            rowEls[g.key][t.key] = row
+
+            color.addEventListener('input', () => {
+                inherit[g.key][t.key] = false
+                state[g.key][t.key] = g.out === 'oklch' ? hexToOklchString(color.value) : color.value
+                render()
+            })
+            text.addEventListener('input', () => {
+                if (!isValid(text.value)) { text.classList.add('bad'); return }
+                text.classList.remove('bad')
+                inherit[g.key][t.key] = false
+                state[g.key][t.key] = text.value.trim()
+                render()
+            })
+        }
+
+        fs.appendChild(rows)
+        const cbox = el('div', 'contrast')
+        contrastEls[g.key] = cbox
+        fs.appendChild(cbox)
+        controls.appendChild(fs)
+
+        splitBox.addEventListener('change', () => { split[g.key] = splitBox.checked; render() })
+    }
+
+    /* ---------- previews ---------------------------------------------- */
+
+    const SAMPLE = [
+        { title: 'MDN Web Docs — using CSS custom properties', url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties', path: 'Bookmarks Bar / Reference', initial: 'M', tint: '#4b7fd6' },
+        { title: 'Chrome for Developers — extension docs', url: 'https://developer.chrome.com/docs/extensions/reference/api/bookmarks', path: 'Bookmarks Bar / Dev / Chrome', initial: 'C', tint: '#d67a3c' },
+        { title: 'Svelte docs — snippets', url: 'https://svelte.dev/docs/svelte/snippet', path: 'Bookmarks Bar / Dev', initial: 'S', tint: '#c8452a' },
+    ]
+
+    let selected = 1
+    let query = 'doc chrome'
+
+    // Paint one text line as alternating plain / highlighted spans. Text goes in
+    // via textContent, never innerHTML — same reasoning as lib/highlight.ts.
+    function paint(target, text, kind, groupKey) {
+        target.textContent = ''
+        const bg = effective(groupKey, kind === 'url' ? 'urlBg' : 'hitBg')
+        const fg = effective(groupKey, kind === 'url' ? 'urlFg' : 'hitFg')
+        for (const seg of highlight(text, query)) {
+            if (!seg.hit) { target.appendChild(document.createTextNode(seg.text)); continue }
+            const span = el('span', 'hit', seg.text)
+            span.style.background = bg
+            if (fg && fg !== 'inherit') span.style.color = fg
+            target.appendChild(span)
+        }
+    }
+
+    function buildModern(groupKey, label) {
+        const ground = GROUND[groupKey]
+        const wrap = el('div', 'pv')
+        wrap.appendChild(el('span', 'lab-label', label))
+        const shell = el('div', 'shell')
+        const mv = el('div', 'mv')
+        mv.style.background = ground.bg
+        mv.style.color = ground.text
+
+        const input = el('div', 'mv-input')
+        input.style.background = ground.inputBg
+        input.style.color = ground.sub
+        input.textContent = query || 'Start typing…'
+        mv.appendChild(input)
+
+        const list = el('div', 'mv-list')
+        SAMPLE.forEach((item, i) => {
+            const row = el('div', 'mv-row')
+            row.tabIndex = 0
+            const tile = el('div', 'tile', item.initial)
+            tile.style.background = ground.tileBg === 'transparent' ? item.tint : ground.tileBg
+            tile.style.color = ground.tileBg === 'transparent' ? '#fff' : ground.tileFg
+            const body = el('div', 'mv-body')
+            const crumb = el('div', 'crumb', item.path.split(' / ').join(' › '))
+            crumb.style.color = ground.sub
+            const title = el('div', 'title')
+            title.style.color = ground.text
+            const url = el('div', 'url')
+            url.style.color = ground.sub
+            body.append(crumb, title, url)
+            row.append(tile, body)
+            list.appendChild(row)
+
+            const select = () => { selected = i; render() }
+            row.addEventListener('click', select)
+            row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select() } })
+
+            row._parts = { row, title, url, input }
+        })
+        mv.appendChild(list)
+        shell.appendChild(mv)
+        wrap.appendChild(shell)
+        wrap._refresh = () => {
+            input.textContent = query || 'Start typing…'
+            list.childNodes.forEach((row, i) => {
+                row.style.background = i === selected ? effective(groupKey, 'sel') : 'transparent'
+                paint(row._parts.title, SAMPLE[i].title, 'title', groupKey)
+                paint(row._parts.url, SAMPLE[i].url, 'url', groupKey)
+            })
+        }
+        return wrap
+    }
+
+    function buildClassic() {
+        const wrap = el('div', 'pv')
+        wrap.appendChild(el('span', 'lab-label', 'Classic · light ground'))
+        const shell = el('div', 'shell')
+        const cv = el('div', 'cv')
+        const input = el('div', 'cv-input')
+        cv.appendChild(input)
+        const ul = document.createElement('ul')
+        SAMPLE.forEach((item, i) => {
+            const li = document.createElement('li')
+            li.tabIndex = 0
+            const tile = el('span', 'tile', item.initial)
+            tile.style.background = item.tint
+            const body = el('div', 'cv-body')
+            const title = el('span', 'title')
+            const path = el('span', 'path', item.path)
+            const url = el('span', 'url')
+            body.append(title, path, url)
+            li.append(tile, body)
+            ul.appendChild(li)
+
+            const select = () => { selected = i; render() }
+            li.addEventListener('click', select)
+            li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select() } })
+
+            li._parts = { title, url }
+        })
+        cv.appendChild(ul)
+        shell.appendChild(cv)
+        wrap.appendChild(shell)
+        wrap._refresh = () => {
+            input.textContent = query || 'Start typing…'
+            ul.childNodes.forEach((li, i) => {
+                li.style.background = i === selected ? effective('classic', 'sel') : 'transparent'
+                paint(li._parts.title, SAMPLE[i].title, 'title', 'classic')
+                paint(li._parts.url, SAMPLE[i].url, 'url', 'classic')
+            })
+        }
+        return wrap
+    }
+
+    const pvNodes = [buildModern('modernLight', 'Modern · light'), buildModern('modernDark', 'Modern · dark'), buildClassic()]
+    pvNodes.forEach((n) => previews.appendChild(n))
+
+    /* ---------- contrast readout -------------------------------------- */
+
+    function contrastPairs(groupKey) {
+        const g = GROUPS.find((x) => x.key === groupKey)
+        const ground = GROUND[groupKey]
+        const titleInk = groupKey === 'classic' ? ground.link : ground.text
+        const urlInk = ground.sub
+        return [
+            ['Title hit ink on hit bg', effective(groupKey, 'hitFg'), effective(groupKey, 'hitBg')],
+            ['URL hit ink on URL hit bg', effective(groupKey, 'urlFg'), effective(groupKey, 'urlBg')],
+            ['Title on selected row', titleInk, effective(groupKey, 'sel')],
+            ['URL / breadcrumb on selected row', urlInk, effective(groupKey, 'sel')],
+        ]
+    }
+
+    function renderContrast() {
+        for (const g of GROUPS) {
+            const box = contrastEls[g.key]
+            box.textContent = ''
+            for (const [label, fg, bg] of contrastPairs(g.key)) {
+                const ratio = contrast(fg, bg)
+                const line = el('div', 'cline')
+                line.appendChild(el('span', null, label))
+                const val = el('b', null, ratio ? ratio.toFixed(2) + ':1' : '—')
+                val.className = !ratio ? '' : ratio >= 4.5 ? 'ok' : ratio >= 3 ? 'warn' : 'bad'
+                line.appendChild(val)
+                box.appendChild(line)
+            }
+        }
+    }
+
+    /* ---------- output ------------------------------------------------ */
+
+    const outCode = document.querySelector('#out code')
+    const changedBox = document.getElementById('changed')
+
+    function emitted(group) {
+        return group.tokens
+            .filter((t) => !t.url || split[group.key])
+            .map((t) => ({ token: t, value: outputValue(group, t) }))
+    }
+
+    function buildCss() {
+        const lines = []
+        const classic = GROUPS.find((g) => g.key === 'classic')
+        lines.push('/* bookmark-express-v3/src/app.css */')
+        lines.push(':root {')
+        for (const { token, value } of emitted(classic)) lines.push(`    ${token.css}: ${value};`)
+        lines.push('}')
+        lines.push('')
+        lines.push('/* bookmark-express-v3/src/components/ModernView.svelte — <style> */')
+        for (const key of ['modernLight', 'modernDark']) {
+            const g = GROUPS.find((x) => x.key === key)
+            lines.push(`:global(html[data-theme='${key === 'modernLight' ? 'light' : 'dark'}']) {`)
+            lines.push('    /* …existing tokens unchanged… */')
+            for (const { token, value } of emitted(g)) lines.push(`    ${token.css}: ${value};`)
+            lines.push('}')
+        }
+        return lines.join('\n')
+    }
+
+    function buildValues() {
+        const lines = ['BMX-14 highlight colors — commit these:', '']
+        for (const g of GROUPS) {
+            lines.push(`${g.label}  (${g.file})`)
+            for (const { token, value } of emitted(g)) {
+                const changed = value !== token.current
+                lines.push(`  ${token.css}: ${value};${changed ? '   <- changed from ' + token.current : ''}`)
+            }
+            if (!split[g.key]) lines.push('  (URL hits share the title colors — no URL tokens)')
+            lines.push('')
+        }
+        lines.push(`Sample query used: "${query}"`)
+        return lines.join('\n')
+    }
+
+    function renderOutput() {
+        outCode.textContent = buildCss()
+        const diffs = []
+        for (const g of GROUPS) {
+            for (const { token, value } of emitted(g)) {
+                if (value !== token.current) diffs.push(`${g.label} · ${token.css}: ${token.current} → ${value}`)
+            }
+        }
+        changedBox.textContent = ''
+        if (diffs.length === 0) {
+            changedBox.appendChild(el('span', null, 'Nothing changed yet — these are the values v3 ships today.'))
+            return
+        }
+        const many = diffs.length !== 1
+        changedBox.appendChild(el('span', null, `${diffs.length} value${many ? 's' : ''} ${many ? 'differ' : 'differs'} from what ships today:`))
+        const ul = document.createElement('ul')
+        for (const d of diffs) {
+            const li = document.createElement('li')
+            li.appendChild(el('code', null, d))
+            ul.appendChild(li)
+        }
+        changedBox.appendChild(ul)
+    }
+
+    /* ---------- render loop ------------------------------------------- */
+
+    function render() {
+        for (const g of GROUPS) {
+            for (const t of g.tokens) {
+                const resolved = effective(g.key, t.key)
+                const parsed = parseColor(resolved)
+                if (parsed) swatches[g.key][t.key].value = toHex(parsed)
+                const field = textFields[g.key][t.key]
+                if (document.activeElement !== field) {
+                    field.value = inherit[g.key][t.key] ? 'inherit' : state[g.key][t.key]
+                    field.classList.remove('bad')
+                }
+                const disabled = t.url && !split[g.key]
+                rowEls[g.key][t.key].classList.toggle('off', disabled)
+                swatches[g.key][t.key].disabled = disabled
+                field.disabled = disabled
+            }
+        }
+        pvNodes.forEach((n) => n._refresh())
+        renderContrast()
+        renderOutput()
+    }
+
+    /* ---------- wiring ------------------------------------------------ */
+
+    document.getElementById('q').addEventListener('input', (e) => { query = e.target.value; render() })
+
+    function applyPreset(name) {
+        const preset = PRESETS[name]
+        for (const g of GROUPS) {
+            for (const t of g.tokens) {
+                const value = preset ? preset.values[g.key][t.key] : t.current
+                inherit[g.key][t.key] = Boolean(t.inheritsAs) && value === 'inherit'
+                state[g.key][t.key] = value
+            }
+            split[g.key] = preset ? preset.split : false
+            document.getElementById(`split-${g.key}`).checked = split[g.key]
+        }
+        render()
+    }
+
+    const presetBar = document.getElementById('presets')
+    for (const name of Object.keys(PRESETS)) {
+        const btn = el('button', null, name)
+        btn.type = 'button'
+        btn.addEventListener('click', () => applyPreset(name))
+        presetBar.appendChild(btn)
+    }
+
+    function copy(text, button) {
+        const done = () => {
+            const original = button.textContent
+            button.textContent = 'Copied'
+            setTimeout(() => (button.textContent = original), 1200)
+        }
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).then(done, () => fallback(text, done))
+        } else fallback(text, done)
+    }
+    function fallback(text, done) {
+        const ta = document.createElement('textarea')
+        ta.value = text
+        document.body.appendChild(ta)
+        ta.select()
+        try { document.execCommand('copy'); done() } finally { ta.remove() }
+    }
+
+    document.getElementById('copy-css').addEventListener('click', (e) => copy(buildCss(), e.currentTarget))
+    document.getElementById('copy-values').addEventListener('click', (e) => copy(buildValues(), e.currentTarget))
+
+    // Open on the signed-off decision, not on the shipped values, so the lab
+    // shows the agreed result and the readout below lists what it changes.
+    applyPreset('Signed off')
+})()
+</script>
