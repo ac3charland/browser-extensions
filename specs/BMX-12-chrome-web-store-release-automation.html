@@ -1,0 +1,393 @@
+<meta charset="utf-8">
+<title>BMX-12 — Add integrations to publish to the Chrome Web Store</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #5a5f6a; --line: #e3e6ea;
+    --card: #f7f8fa; --accent: #3f51b5; --accent-fg: #ffffff;
+    --code-bg: #f0f2f5;
+    --yes: #2e7d32; --partial: #b26a00; --no: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --fg: #e6e8eb; --muted: #9aa0ab; --line: #2a2e37;
+      --card: #1d2027; --accent: #7986cb; --accent-fg: #16181d;
+      --code-bg: #23262e;
+      --yes: #7fc784; --partial: #e0a94b; --no: #f2837a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; max-width: 900px; padding: 2.5rem 1.25rem 5rem;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 .35rem; }
+  h2 { font-size: 1.35rem; margin: 2.4rem 0 .8rem; padding-top: .6rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.08rem; margin: 1.5rem 0 .4rem; }
+  h4 { font-size: .98rem; margin: 1.1rem 0 .3rem; }
+  a { color: var(--accent); }
+  code {
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--code-bg); padding: .1em .35em; border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: .85rem 1rem; overflow-x: auto;
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  pre code { background: none; padding: 0; }
+  .sub { color: var(--muted); font-size: .95rem; }
+  .meta { margin: .75rem 0 0; display: flex; flex-wrap: wrap; gap: .4rem .9rem; font-size: .9rem; color: var(--muted); }
+  .meta b { color: var(--fg); font-weight: 600; }
+  .callout {
+    background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: 8px; padding: .9rem 1.1rem; margin: 1.2rem 0;
+  }
+  .callout.warn { border-left-color: var(--partial); }
+  .tocard { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.2rem; }
+  ul.tight { margin: .3rem 0; padding-left: 1.25rem; }
+  ul.tight li { margin: .15rem 0; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; min-width: 640px; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .03em; }
+  .pill {
+    display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+    padding: .12em .5em; border-radius: 999px; white-space: nowrap; text-transform: uppercase;
+  }
+  .pill.yes { color: var(--yes); border: 1px solid var(--yes); }
+  .pill.partial { color: var(--partial); border: 1px solid var(--partial); }
+  .pill.no { color: var(--no); border: 1px solid var(--no); }
+  .ac { margin: .3rem 0 0; padding-left: 1.2rem; }
+  .ac li { margin: .3rem 0; }
+  .ref { font-size: .82rem; color: var(--muted); }
+  .steps { counter-reset: step; list-style: none; padding-left: 0; }
+  .steps > li {
+    counter-increment: step; position: relative; padding-left: 2.4rem; margin: .9rem 0;
+  }
+  .steps > li::before {
+    content: counter(step); position: absolute; left: 0; top: .05rem;
+    width: 1.7rem; height: 1.7rem; border-radius: 50%;
+    background: var(--accent); color: var(--accent-fg);
+    font-size: .82rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .steps > li > b:first-child { display: block; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+</style>
+
+<h1>Automate the Chrome Web Store release</h1>
+<p class="sub">A refinement spec for <code>bookmark-express-v3</code>: turn the hand-run submission checklist in <code>store/README.md</code> into one command that bumps the version, builds the zip, regenerates the store art, validates the listing copy, and uploads the package to the Web Store as a draft — leaving only the steps the Web Store API genuinely cannot do.</p>
+
+<div class="meta">
+  <span><b>Ticket:</b> BMX-12</span>
+  <span><b>Phase:</b> refinement</span>
+  <span><b>Target:</b> <code>bookmark-express-v3</code> (Svelte + TS, MV3)</span>
+  <span><b>Type:</b> build / release tooling (no extension behaviour changes)</span>
+  <span><b>Date:</b> 2026-07-27</span>
+</div>
+
+<div class="callout">
+  <b>How to use this document.</b> §1 answers the ticket's actual question — <em>how much of this is possible?</em> §2 is what exists today. §3–§7 are the spec the build session implements. §8–§11 are acceptance criteria, files touched, scope boundaries, and the decisions already signed off. Nothing in the repo has been changed by this document.
+</div>
+
+<h2>1. TL;DR — how much of the ticket is possible</h2>
+
+<p>Four of the five wishes are fully automatable. The one that is not is <b>not a matter of effort</b> — the Chrome Web Store API has no endpoint for listing metadata and never has. That is a permanent ceiling, not a gap we can close later.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Ticket wish</th><th>Verdict</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>Regenerate the demo images</b></td>
+      <td><span class="pill yes">Automatable</span></td>
+      <td><code>scripts/gen-store-assets.mjs</code> already renders all four assets from the brand art and the built popup. The release command calls it. <em>Getting the new PNGs into the store listing is a manual drag-and-drop</em> — see the row below.</td>
+    </tr>
+    <tr>
+      <td><b>Update our description</b></td>
+      <td><span class="pill partial">Partly</span></td>
+      <td>The API cannot write the description, summary, screenshots, promo tile, category, or privacy justifications. Those are Developer Dashboard fields, full stop. What we <em>can</em> automate: keep the copy in <code>store/listing.md</code> as today, and have the release command emit each dashboard field as a separate paste-ready <code>.txt</code>, length-checked against the store's limits and cross-checked against the manifest. Pasting stays manual.</td>
+    </tr>
+    <tr>
+      <td><b>Build the zip as we do today</b></td>
+      <td><span class="pill yes">Automatable</span></td>
+      <td><code>npm run zip</code> already does exactly this. The release command calls it unchanged, so the artifact is byte-for-byte the process we ship today.</td>
+    </tr>
+    <tr>
+      <td><b>Upload as a new draft release</b></td>
+      <td><span class="pill yes">Automatable</span></td>
+      <td>Web Store API v2 <code>publishers.items.upload</code> uploads a package against an existing item. <b>Upload does not submit for review</b> — the new version sits as the item's draft until something calls <code>publish</code>. That is precisely the ticket's ask, and it is one API call.</td>
+    </tr>
+    <tr>
+      <td><b>Near-zero-touch releases</b></td>
+      <td><span class="pill yes">Achieved</span></td>
+      <td>After this ticket a release is: run one command, then in the dashboard paste any changed text fields, drag any changed images, click <b>Submit for review</b>. When neither the copy nor the art changed — the common case for a bugfix release — the manual part collapses to a single click.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout warn">
+  <b>Two hard constraints the build session must design around.</b>
+  <ul class="tight" style="margin-bottom:0">
+    <li><b>API v1 dies 15 October 2026.</b> The legacy <code>googleapis.com/chromewebstore/v1.1</code> endpoints are deprecated with that hard cutoff — under three months from this spec's date. Most tutorials and several popular wrappers still target v1. <b>Build against v2 (<code>chromewebstore.googleapis.com/v2</code>) only.</b> Do not write a v1 code path "for now".</li>
+    <li><b>v2 cannot create items.</b> Item creation was dropped from v2 deliberately, because a brand-new item still needs dashboard metadata before it can go anywhere. So the <em>first</em> submission of an item is always by hand; automation takes over from the second release onward. See §10 for what this means for v3 specifically.</li>
+  </ul>
+</div>
+
+<h2>2. What exists today</h2>
+
+<p>The release path is already half-built — it is just not joined up, and every step is invoked by hand from <code>store/README.md</code>'s checklist.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Piece</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td><code>package.json</code> <code>zip</code> script</td><td>Works. <code>npm run build</code> (type-check + Vite) then <code>zip -r ../bookmark-express-v3.zip *</code> from <code>dist/</code>.</td></tr>
+    <tr><td><code>scripts/gen-store-assets.mjs</code></td><td>Works. Renders the modern popup in Chromium against a mocked <code>chrome.*</code> API and composites the store icon, 440×280 promo tile, and two 1280×800 screenshots into <code>store/</code>. Needs <code>sharp</code> + <code>playwright</code> installed <code>--no-save</code>, plus the <b>Gelasio</b> font.</td></tr>
+    <tr><td><code>store/listing.md</code></td><td>Holds every dashboard text field — name, summary, description, category, single purpose, three permission justifications, data-usage answers.</td></tr>
+    <tr><td><code>store/README.md</code></td><td>A six-step manual submission checklist and an asset→dashboard-field table.</td></tr>
+    <tr><td><code>store/privacy-policy.md</code></td><td>The hostable policy. Its URL is pasted into the dashboard by hand.</td></tr>
+    <tr><td><code>verify-dev-build.mjs</code></td><td>The house pattern for this kind of check: pure Node, no build and no browser, asserts against the real files, exits non-zero on failure. The new verifier in §6 follows it.</td></tr>
+    <tr><td>Version</td><td>Duplicated by hand in <code>package.json</code> and <code>public/manifest.json</code> (both <code>10.2.1</code>). Nothing enforces that they agree.</td></tr>
+    <tr><td>CI</td><td><b>None.</b> The repo has no <code>.github/</code> directory at all. This ticket introduces the first workflow.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>2.1 Two live defects this ticket surfaces</h3>
+<ul class="tight">
+  <li><b><code>clipboardWrite</code> has no permission justification.</b> <code>public/manifest.json</code> requests <code>["bookmarks", "clipboardWrite", "favicon", "storage"]</code>, but <code>store/listing.md</code> justifies only three of them — <code>clipboardWrite</code> (added by BMX-6, the Cmd+C copy shortcut) was never written up. An unjustified permission is a common review rejection. The verifier in §6 makes this class of drift impossible to ship again, and the build session fixes this instance.</li>
+  <li><b>The version can silently drift.</b> <code>package.json</code> and <code>public/manifest.json</code> carry the same string with nothing checking it. Only the manifest's copy matters to the store, so a bump that misses the manifest produces an upload the API rejects — after the build has already run.</li>
+</ul>
+
+<h2>3. The shape of the change</h2>
+
+<p>One orchestrating script, three small modules it composes, a pure verifier, and a thin CI wrapper. All under <code>bookmark-express-v3/</code>.</p>
+
+<pre><code>bookmark-express-v3/
+  scripts/
+    release.mjs        NEW  orchestrator — the one command
+    cws-api.mjs        NEW  Web Store API v2 client (auth, get, upload)
+    listing.mjs        NEW  pure parser for store/listing.md
+    version.mjs        NEW  pure version bump + package/manifest sync
+    gen-store-assets.mjs    CHANGED — font preflight (§5.3)
+  verify-release.mjs   NEW  pure release-readiness check
+  package.json         CHANGED — release / verify:release scripts
+.github/workflows/
+  release-draft.yml    NEW  workflow_dispatch wrapper</code></pre>
+
+<p>The split exists so the parts that can be tested without a network, a build, or a browser <em>are</em> — matching how <code>dev-build.mjs</code> and <code>verify-dev-build.mjs</code> already divide pure transform from I/O in this project. <code>listing.mjs</code> and <code>version.mjs</code> are pure functions over strings; <code>verify-release.mjs</code> asserts against them and the real files; <code>release.mjs</code> and <code>cws-api.mjs</code> own all the side effects.</p>
+
+<h2>4. The release command</h2>
+
+<pre><code>npm run release -- patch          # or minor | major | 10.3.0
+npm run release -- patch --dry-run
+npm run release -- patch --skip-assets</code></pre>
+
+<p>Stages, in order. Any stage failing aborts the whole run — nothing is uploaded and no half-state is left behind beyond files already written to disk (which the summary names).</p>
+
+<ol class="steps">
+  <li>
+    <b>Preflight</b>
+    Working tree clean (override: <code>--allow-dirty</code>). Credentials present and parseable (§5.1). <code>store/</code> holds every asset <code>store/README.md</code>'s table declares. <code>verify-release.mjs</code>'s checks all pass — the same assertions, run up front so a copy or permission problem stops the release before a build burns two minutes.
+  </li>
+  <li>
+    <b>Version</b>
+    Resolve the bump to a concrete semver, write it into <b>both</b> <code>package.json</code> and <code>public/manifest.json</code>. Then <code>GET</code> the item from the API and assert the new version is <em>strictly greater</em> than what is already published or drafted — the upload endpoint rejects a version that is not higher, and catching it here costs one request instead of a full build.
+  </li>
+  <li>
+    <b>Build &amp; zip</b>
+    Shell out to <code>npm run zip</code> unchanged, so the uploaded artifact comes off exactly today's path (type-check → Vite prod build → <code>zip -r</code> from <code>dist/</code>). Assert <code>bookmark-express-v3.zip</code> exists afterwards and that the <code>manifest.json</code> <em>inside</em> it carries the version from stage 2 — this is the last point where a stale <code>dist/</code> could still slip through.
+  </li>
+  <li>
+    <b>Store assets</b> <span class="ref">(skip with <code>--skip-assets</code>)</span>
+    Run <code>scripts/gen-store-assets.mjs</code>. Hash each <code>store/*.png</code> before and after and record which ones actually changed — that list drives the manual checklist in stage 7, so a release whose art is unchanged never asks anyone to re-upload identical images.
+  </li>
+  <li>
+    <b>Listing</b>
+    Parse <code>store/listing.md</code> and write one paste-ready plain-text file per dashboard field into <code>store/dist/</code> (gitignored). Enforce the length limits and the manifest cross-check (§5.2).
+  </li>
+  <li>
+    <b>Upload</b> <span class="ref">(skipped under <code>--dry-run</code>)</span>
+    <code>POST</code> the zip to the v2 upload endpoint. Poll the returned operation until it settles. <b>Never call <code>publish</code>.</b> The new version lands as the item's draft; submitting for review stays a human's decision, made in the dashboard.
+  </li>
+  <li>
+    <b>Report</b>
+    Print the residual manual checklist — a dashboard deep link, the exact files to paste from (only fields whose text changed since the last release), the exact images to drag (only those from stage 4's changed list), and the reminder to click <b>Submit for review</b>. Also print the local files the run modified, since <code>release.mjs</code> deliberately does not commit (§7).
+  </li>
+</ol>
+
+<h2>5. Details worth pinning down</h2>
+
+<h3>5.1 Auth — service account</h3>
+
+<p>Signed off: <b>service account</b>, not an OAuth client + refresh token. It is a v2-only capability, it removes the refresh-token-expiry failure mode that makes the classic setup fragile in CI, and it needs no consent flow.</p>
+
+<p>Configuration, read from the environment (a gitignored <code>.env</code> locally, repo secrets/vars in CI):</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Name</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>CWS_SERVICE_ACCOUNT_JSON</code></td><td>The service-account key — accepted either as inline JSON or as a path to the key file, so the same variable works for a CI secret and a local file.</td></tr>
+    <tr><td><code>CWS_PUBLISHER_ID</code></td><td>Publisher this item belongs to.</td></tr>
+    <tr><td><code>CWS_ITEM_ID</code></td><td>The 32-character Web Store item ID to upload against.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>cws-api.mjs</code> signs a JWT assertion with the key and exchanges it for an access token scoped to <code>https://www.googleapis.com/auth/chromewebstore</code>. Sign it with <code>node:crypto</code>'s <code>createSign('RSA-SHA256')</code> rather than adding <code>google-auth-library</code> — it is roughly thirty lines and keeps this project's zero-dependency scripting habit intact (<code>gen-store-assets.mjs</code> and <code>verify-dev-build.mjs</code> set the same precedent). Cache the token for the run; it outlives a single release comfortably.</p>
+
+<p>Endpoints the client needs — and only these:</p>
+
+<pre><code>GET  https://chromewebstore.googleapis.com/v2/publishers/{pub}/items/{item}
+POST https://chromewebstore.googleapis.com/upload/v2/publishers/{pub}/items/{item}:upload</code></pre>
+
+<p class="ref">There is deliberately no <code>publish</code> wrapper. Not writing it is the safeguard: nothing in this codebase will be able to submit a release for review by accident.</p>
+
+<div class="callout warn">
+  <b>Setup is a one-time human task, and it is a prerequisite for the build ticket to be testable end-to-end.</b> Create a Google Cloud project, enable the Chrome Web Store API, create a service account and key, then add that service-account email under <b>Account</b> in the Developer Dashboard. Note the ceiling: <b>a publisher can have exactly one service account.</b> The build session should document these steps in <code>store/README.md</code> and should not assume it can perform them.
+</div>
+
+<h3>5.2 Listing: what "update our description" can actually mean</h3>
+
+<p>The API will not accept our description, so the achievable goal is different: make the copy <b>trustworthy and paste-ready</b>, so the manual step is mechanical rather than a place where mistakes enter.</p>
+
+<p><code>listing.mjs</code> parses <code>store/listing.md</code>'s existing structure — fenced code blocks under bolded field headings — into a keyed object. The file's format does not change; it stays the human-editable source of truth. From that, the release writes:</p>
+
+<pre><code>store/dist/          # gitignored
+  name.txt
+  summary.txt
+  description.txt
+  single-purpose.txt
+  permission-bookmarks.txt
+  permission-clipboardWrite.txt
+  permission-favicon.txt
+  permission-storage.txt
+  MANUAL.md          # the stage-7 checklist, as a file you can keep open</code></pre>
+
+<p>And enforces:</p>
+<ul class="tight">
+  <li><b>Length limits</b> — name ≤ 75, summary ≤ 132, description ≤ 16,000. Keep these as named constants in one place in <code>listing.mjs</code>; the store has moved them before and will again.</li>
+  <li><b>Permission parity</b> — the set of justification blocks in <code>listing.md</code> must equal <code>manifest.json</code>'s <code>permissions</code> array exactly. Both directions: a permission with no justification fails, and a justification for a permission we no longer request fails too. This is the check that catches the <code>clipboardWrite</code> gap in §2.1.</li>
+  <li><b>Non-empty</b> — every field the dashboard requires is present and not whitespace.</li>
+</ul>
+
+<p>To make stage 7 able to say <em>"only the description changed"</em>, the release records a hash per field in a committed <code>store/.listing-state.json</code> after a successful upload, and diffs against it on the next run. Small file, and it is what turns the manual step from "re-check eight fields" into "paste one".</p>
+
+<h3>5.3 Store assets: fail loudly instead of degrading quietly</h3>
+
+<p><code>gen-store-assets.mjs</code> renders its headlines in Gelasio, and its current comment is explicit that without the font installed it <em>falls back to a generic serif</em>. That is fine for a human running it and watching the output; it is a trap for an automated release, which would happily commit visibly worse screenshots. Add a preflight: after the page loads, check the font is actually available (<code>document.fonts.check</code>) and <b>abort with an actionable message</b> — pointing at the existing install instructions in the file's header — rather than rendering with the fallback.</p>
+
+<p>This is the only change to the generator. Its rendering, layout, and outputs are otherwise untouched.</p>
+
+<h3>5.4 Version sync</h3>
+
+<p>Signed off: the release owns the bump. <code>version.mjs</code> exports a pure <code>nextVersion(current, bump)</code> (accepting <code>patch</code> / <code>minor</code> / <code>major</code> or an explicit semver) and a pure <code>syncManifest(manifestJson, version)</code>. <code>release.mjs</code> writes both files, preserving each file's existing formatting — four-space indent, trailing newline — so the diff is one line per file.</p>
+
+<h2>6. <code>verify-release.mjs</code></h2>
+
+<p>A pure release-readiness check in the mould of <code>verify-dev-build.mjs</code>: no network, no build, no browser, collect all failures then exit non-zero. Runnable on its own (<code>npm run verify:release</code>) and called by both the release preflight and the CI workflow.</p>
+
+<ul class="tight">
+  <li><code>package.json</code> and <code>public/manifest.json</code> versions are equal and valid semver.</li>
+  <li><code>store/listing.md</code> parses, and every field is present, non-empty, and within its limit.</li>
+  <li>Justified permissions and manifest permissions match exactly, both directions (§5.2).</li>
+  <li>Every asset in <code>store/README.md</code>'s table exists at the declared pixel size — read the dimensions straight out of the PNG <code>IHDR</code> header rather than adding an image dependency to a check that must stay dependency-free.</li>
+  <li>The listing's stated item name matches the manifest's <code>name</code>.</li>
+</ul>
+
+<h2>7. CI wrapper</h2>
+
+<p><code>.github/workflows/release-draft.yml</code> — <code>workflow_dispatch</code> only. No push or tag trigger: a release that fires on its own is the opposite of what this ticket wants.</p>
+
+<p>Inputs: <code>bump</code> (choice: patch / minor / major), <code>skip_assets</code> (boolean), <code>dry_run</code> (boolean). Secret: <code>CWS_SERVICE_ACCOUNT_JSON</code>. Variables: <code>CWS_PUBLISHER_ID</code>, <code>CWS_ITEM_ID</code>.</p>
+
+<p>Steps: checkout → Node + <code>npm ci</code> → install <code>sharp</code> and <code>playwright</code> <code>--no-save</code> and the Gelasio font (unless <code>skip_assets</code>) → <code>node scripts/release.mjs</code> → upload the zip and any regenerated PNGs as workflow artifacts → push a <code>release/vX.Y.Z</code> branch with the version bump, regenerated assets, and listing state, and open a PR for it with <code>gh</code> (preinstalled on the runner, authenticated by <code>GITHUB_TOKEN</code>).</p>
+
+<p>The workflow holds no release logic of its own — it installs the generator's dependencies, sets three environment variables, and calls the script. Everything it does is reproducible locally by running the same command.</p>
+
+<div class="callout">
+  <b>Why the script never commits and the workflow does.</b> Locally, <code>release.mjs</code> leaves its edits in the working tree and lists them, so you review the version bump and any regenerated art before committing — same as any other change in this repo. In CI there is nobody to review a dirty tree, so the wrapper turns those edits into a PR. Keeping the commit logic in the wrapper is what lets the script stay a pure build step.
+</div>
+
+<h2>8. Acceptance criteria</h2>
+<ul class="ac">
+  <li><code>npm run release -- patch</code> in <code>bookmark-express-v3/</code> performs stages 1–7 of §4 end to end and finishes with the new version sitting as a <b>draft</b> on the Web Store item.</li>
+  <li>The release <b>never</b> submits for review. No code path in the repo calls the v2 <code>publish</code> endpoint, and no wrapper for it is written.</li>
+  <li>All Web Store calls target <b>API v2</b> (<code>chromewebstore.googleapis.com/v2</code>) and authenticate with a <b>service account</b>. No v1 endpoint and no refresh-token path exists anywhere in the codebase.</li>
+  <li>After the run, <code>package.json</code> and <code>public/manifest.json</code> carry the same new version, and the <code>manifest.json</code> inside the uploaded zip carries it too.</li>
+  <li>A version that is not strictly greater than the item's current store version aborts the run <b>before</b> the build stage, with a message naming both versions.</li>
+  <li>The zip is produced by <code>npm run zip</code> unchanged — the packaging path is the one shipping today.</li>
+  <li><code>store/</code> is regenerated by default; <code>--skip-assets</code> skips it. <code>gen-store-assets.mjs</code> aborts with an actionable message if Gelasio is missing, instead of rendering with the fallback serif.</li>
+  <li>Every dashboard text field is emitted to <code>store/dist/</code> as its own paste-ready <code>.txt</code>, and the run fails if any field is empty or over its limit.</li>
+  <li>The manifest's permissions and <code>listing.md</code>'s justification blocks must match exactly in both directions, or the run fails. <b><code>clipboardWrite</code> gains the justification it is missing today</b> (§2.1) as part of this ticket.</li>
+  <li>The final report names only the dashboard fields whose text actually changed and only the images whose bytes actually changed since the last successful release, plus the dashboard deep link and the Submit-for-review reminder.</li>
+  <li><code>--dry-run</code> does everything except the upload, and says so.</li>
+  <li><code>node verify-release.mjs</code> runs with no network, no build, and no browser, reports every failure rather than the first, and exits non-zero on any.</li>
+  <li>The workflow is <code>workflow_dispatch</code>-only, contains no release logic beyond installing dependencies and invoking the script, and opens a PR carrying the version bump and any regenerated assets.</li>
+  <li>Credentials never reach the repo: <code>.env</code> is gitignored, the service-account key is a CI secret, and no credential value is printed — including in error paths.</li>
+  <li><code>store/README.md</code> and the project <code>README.md</code> describe the new flow, including the one-time service-account setup and the manual steps that remain.</li>
+  <li><code>npm run check</code> and <code>npm run build</code> still pass, and no file under <code>src/</code>, <code>public/</code> (other than the manifest's version string), or <code>index.html</code> / <code>options.html</code> is modified — the extension's behaviour is untouched by this ticket.</li>
+</ul>
+
+<h2>9. Files touched</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>File</th><th>Change</th></tr></thead>
+  <tbody>
+    <tr><td><code>bookmark-express-v3/scripts/release.mjs</code></td><td><b>New.</b> The orchestrator — stages 1–7 of §4.</td></tr>
+    <tr><td><code>bookmark-express-v3/scripts/cws-api.mjs</code></td><td><b>New.</b> v2 client: service-account JWT → token, <code>get</code>, <code>upload</code>. No <code>publish</code>.</td></tr>
+    <tr><td><code>bookmark-express-v3/scripts/listing.mjs</code></td><td><b>New.</b> Pure parser + limits + permission cross-check for <code>store/listing.md</code>.</td></tr>
+    <tr><td><code>bookmark-express-v3/scripts/version.mjs</code></td><td><b>New.</b> Pure <code>nextVersion</code> / <code>syncManifest</code>.</td></tr>
+    <tr><td><code>bookmark-express-v3/verify-release.mjs</code></td><td><b>New.</b> Pure release-readiness check (§6).</td></tr>
+    <tr><td><code>bookmark-express-v3/scripts/gen-store-assets.mjs</code></td><td>Font preflight only (§5.3). Rendering unchanged.</td></tr>
+    <tr><td><code>bookmark-express-v3/package.json</code></td><td>Add <code>release</code> and <code>verify:release</code> scripts. Version bumped by the release itself.</td></tr>
+    <tr><td><code>bookmark-express-v3/.gitignore</code></td><td>Add <code>.env</code> and <code>store/dist/</code>.</td></tr>
+    <tr><td><code>bookmark-express-v3/store/listing.md</code></td><td>Add the missing <code>clipboardWrite</code> justification (§2.1).</td></tr>
+    <tr><td><code>bookmark-express-v3/store/README.md</code></td><td>Replace the manual checklist with the automated flow + the residual manual steps + one-time service-account setup.</td></tr>
+    <tr><td><code>bookmark-express-v3/store/.listing-state.json</code></td><td><b>New, committed.</b> Per-field copy hashes from the last successful release, so the report can name only what changed.</td></tr>
+    <tr><td><code>bookmark-express-v3/README.md</code></td><td>A <b>Releasing</b> section.</td></tr>
+    <tr><td><code>.github/workflows/release-draft.yml</code></td><td><b>New.</b> The repo's first workflow (§7).</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="ref">Not touched: everything under <code>src/</code>, the popup and options HTML, <code>vite.config.ts</code>, <code>scripts/dev-build.mjs</code>, <code>verify.mjs</code>, <code>verify-dev-build.mjs</code>, and the other extensions in this repo.</p>
+
+<h2>10. Out of scope &amp; open questions</h2>
+<ul class="tight">
+  <li><b>Out of scope — publishing or submitting for review.</b> Signed off (§11). The automation stops at the draft; a human clicks Submit. Staged rollout, <code>deployPercentage</code>, and <code>skipReview</code> are all deliberately unused.</li>
+  <li><b>Out of scope — the other extensions.</b> <code>bookmark-express</code>, <code>bookmark-express-next</code>, <code>chrome-theme-star-gazer</code>, <code>super-small-view-switcher</code>, and <code>video-killer</code> are untouched. Only <code>bookmark-express-v3</code> has store assets and a zip script. Generalising the tooling across the monorepo is a separate ticket, and worth doing only if a second extension actually starts shipping.</li>
+  <li><b>Out of scope — hosting the privacy policy.</b> <code>privacy-policy.md</code> is still published by hand and its URL pasted into the dashboard. Automating that means owning a deploy target, which this repo does not have.</li>
+  <li><b>Out of scope — CI for anything but releases.</b> This ticket adds the repo's first workflow; it does not add test/lint CI for pull requests. Worth its own ticket now that <code>.github/</code> will exist.</li>
+  <li><b>Open — which store item does v3 update?</b> The original MV2 extension is live at item <code>edgcdcdceojjbiebdbgmacecicaknjih</code>, while <code>store/README.md</code>'s checklist reads as a first-time <em>"Add new item"</em> submission. Whichever it is, it is a value of <code>CWS_ITEM_ID</code>, so it does not block the build — but <b>if v3 has never been submitted, the first submission must be done by hand</b> (v2 cannot create items, §1), and the automation is only exercisable from the release after that. The build session should confirm the item ID before claiming an end-to-end run.</li>
+  <li><b>Open — what happens to an already-submitted draft.</b> Uploading while a previous submission is still under review is a state worth confirming against the real item. v2 offers <code>cancelSubmission</code> for it; this spec does not use it. If the build session finds an upload fails in that state, surfacing the API's error clearly is enough — do not automate cancelling someone's in-flight review.</li>
+</ul>
+
+<h2>11. Decisions signed off</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Question</th><th>Decision</th></tr></thead>
+  <tbody>
+    <tr><td>Where the automation lives</td><td>An npm script holding all the logic, plus a thin <code>workflow_dispatch</code> wrapper that calls it. Runnable locally and in CI, identically.</td></tr>
+    <tr><td>How far it goes on its own</td><td><b>Stop at the draft.</b> No publish, no submit-for-review, not even behind a flag.</td></tr>
+    <tr><td>Auth</td><td><b>Service account</b> (v2-only). No OAuth client + refresh token.</td></tr>
+    <tr><td>Version bumping</td><td>The release owns it — bumps <code>package.json</code> and syncs <code>public/manifest.json</code> from the same value.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>12. Definition of done for this refinement</h2>
+<ul class="tight">
+  <li>✅ The ticket's question — <em>how much of this is possible?</em> — is answered per wish, with the permanent ceiling on listing metadata named rather than deferred (§1).</li>
+  <li>✅ The v1 deprecation deadline and v2's lack of item creation are surfaced as design constraints, not footnotes (§1).</li>
+  <li>✅ Everything already in the repo that the release must reuse is inventoried, with two live defects it exposes (§2).</li>
+  <li>✅ The file layout, the seven release stages, and the auth, listing, asset, and versioning details are specified concretely enough to build from (§3–§7).</li>
+  <li>✅ Acceptance criteria, files touched, scope boundaries, and the four signed-off decisions are recorded (§8–§11).</li>
+  <li>No app or source changes are made by this document — the build ticket implements it.</li>
+</ul>
+
+<footer>
+  BMX-12 · refinement phase · spec. Target: <code>bookmark-express-v3</code>. Scope, auth, and release semantics signed off 2026-07-27 (§11). Chrome Web Store API behaviour verified against Google's published documentation for API v2 as of this date; the v1 shutdown on 15 Oct 2026 is the reason v2 is non-negotiable. No extension code is changed by this document.
+</footer>
