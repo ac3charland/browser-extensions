@@ -181,7 +181,7 @@
 </div>
 
 <div class="callout">
-  <b>How to use this document.</b> §1–§4 are the spec: what is wrong today, and the exact token model and code changes that fix it. <b>§5 is a live lab</b> — open this file in a browser, drag the color pickers, and watch real popup mock-ups (modern light, modern dark, classic) update. When the values look right, hit <b>Copy values</b> at the bottom of the lab and paste the block back into the ticket thread; <em>those</em> values are what the build session commits. Nothing in the extension has been changed by this document.
+  <b>How to use this document.</b> §1–§4 are the spec: what is wrong today, and the exact token model and code changes that fix it. <b>§5 is a live lab</b> — open this file in a browser, drag the color pickers, and watch real popup mock-ups (modern light, modern dark, classic) update. The lab is what the values were chosen in; <b>§5.1 records the signed-off result</b>, which is what the build session commits verbatim. Nothing in the extension has been changed by this document.
 </div>
 
 <h2>1. TL;DR</h2>
@@ -192,7 +192,7 @@
     <li>The <b>selected-row</b> background — <code>--selected-bg: #c2ffba</code> in classic, <code>--selected</code> in modern.</li>
   </ul>
   <p>The gaps: the <b>ink color on a hit is hard-coded</b> (modern) or <b>inherited by accident</b> (classic, where a URL hit lands as gray-on-yellow); <b>titles and URLs cannot be tuned apart</b>, though a URL hit wants to be quieter than a title hit; and the <b>classic tokens have no dark variant at all</b>.</p>
-  <p style="margin-bottom:0">The change: expand the two tokens into a five-token family per surface — <b>hit background, hit ink, URL hit background, URL hit ink, selected row</b> — with the URL pair falling back to the title pair when unset, so splitting them stays purely additive. Values are chosen in §5, not here.</p>
+  <p style="margin-bottom:0">The change: expand the two tokens into a five-token family per surface — <b>hit background, hit ink, URL hit background, URL hit ink, selected row</b> — with the URL pair falling back to the title pair when unset, so splitting them stays purely additive. Values were chosen in the lab (§5); <b>the signed-off set is §5.1</b> — four colours move, the URL split is deliberately not taken this time.</p>
 </div>
 
 <h2>2. Where these colors live today</h2>
@@ -341,13 +341,56 @@
   <div class="changed" id="changed"></div>
 </div>
 
+<h3>5.1 Signed off — commit exactly these</h3>
+<p>Chosen from the lab on 2026-07-27 (sample query <code>doc chrome</code>). The lab above loads with these applied. <b>Four values change; everything else stays as it ships today.</b></p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Surface</th><th>Token</th><th>Commit</th><th>Was</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3"><b>Modern · Light</b><br><span class="ref"><code>html[data-theme='light']</code></span></td>
+        <td><code>--highlight</code></td><td><code>oklch(0.883 0.181 94.5)</code></td><td><code>oklch(0.86 0.14 95)</code></td></tr>
+    <tr><td><code>--highlight-fg</code> <span class="pill new">new</span></td><td><code>oklch(0.15 0 0)</code></td><td><em>literal in <code>.search-hit</code></em></td></tr>
+    <tr><td><code>--selected</code></td><td><code>oklch(0.831 0.158 144)</code></td><td><code>oklch(0.92 0.05 145)</code></td></tr>
+    <tr><td rowspan="3"><b>Modern · Dark</b><br><span class="ref"><code>html[data-theme='dark']</code></span></td>
+        <td><code>--highlight</code></td><td><code>oklch(0.831 0.168 93.7)</code></td><td><code>oklch(0.76 0.17 95)</code></td></tr>
+    <tr><td><code>--highlight-fg</code> <span class="pill new">new</span></td><td><code>oklch(0.15 0 0)</code></td><td><em>literal in <code>.search-hit</code></em></td></tr>
+    <tr><td><code>--selected</code></td><td><code>oklch(0.419 0.097 144.3)</code></td><td><code>oklch(0.36 0.05 145)</code></td></tr>
+    <tr><td rowspan="3"><b>Classic</b><br><span class="ref"><code>app.css :root</code></span></td>
+        <td><code>--search-hit-bg</code></td><td><code>yellow</code></td><td><span class="pill have">unchanged</span></td></tr>
+    <tr><td><code>--search-hit-fg</code> <span class="pill new">new</span></td><td><code>inherit</code></td><td><em>implicit</em></td></tr>
+    <tr><td><code>--selected-bg</code></td><td><code>#c2ffba</code></td><td><span class="pill have">unchanged</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><b>The URL split is not taken.</b> No <code>--highlight-url</code> / <code>--search-hit-url-*</code> tokens are declared, so URL hits keep rendering exactly like title hits. The <code>kind</code> prop and the <code>.search-hit.url</code> rules from §4.2 are still built — that is what makes the split a one-line addition later — but they resolve through the fallback to the title tokens, so this ships as a no-op for URLs.</p>
+
+<div class="callout">
+  <b>Contrast check — one pair ships below AA.</b> Per the criterion in §6, every ink/background pair was measured against the signed-off values:
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Pair</th><th>Light</th><th>Dark</th></tr></thead>
+    <tbody>
+      <tr><td>Hit ink on hit background <span class="ref">(the criterion)</span></td><td><b>13.84:1</b> ✅</td><td><b>11.69:1</b> ✅</td></tr>
+      <tr><td>Title on selected row</td><td>10.90:1 ✅</td><td>7.06:1 ✅</td></tr>
+      <tr><td>URL / breadcrumb (<code>--sub</code>) on selected row</td><td><b>3.44:1</b> ⚠️ <span class="ref">(was 4.41:1)</span></td><td><b>2.63:1</b> ⚠️ <span class="ref">(was 3.43:1)</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="margin-bottom:0"><b>Accepted, with the reason:</b> the new selection greens are deliberately bolder, which costs contrast for the muted <code>--sub</code> ink used by the URL line and breadcrumb <em>on the selected row only</em>. Dark was already under AA here (3.43:1) and gets worse; light drops under for the first time. This affects secondary metadata on a single transient row, not the title or the hits, and <code>--sub</code> is out of scope for this ticket. <b>If it should be fixed instead of accepted, the cheap remedy is a dedicated <code>--sub-on-selected</code> ink</b> rather than walking the greens back — file it as a follow-up.</p>
+</div>
+
+<p class="ref"><b>Gamut:</b> all six modern values convert cleanly into sRGB with no channel clipping, so the rendered colour matches the number written. Light <code>--highlight</code> resolves to <code>#ffd501</code> and <code>--selected</code> to <code>#83e283</code>; dark resolves to <code>#ecc411</code> and <code>#265a28</code>.</p>
+
 <h2>6. Acceptance criteria</h2>
 <ul class="ac">
   <li>The five-role token family from §4.1 exists for both looks: classic tokens in <code>src/app.css</code> <code>:root</code>, modern tokens declared in <b>both</b> the <code>html[data-theme='light']</code> and <code>html[data-theme='dark']</code> blocks of <code>ModernView.svelte</code>.</li>
   <li>No highlight or selection color is written as a literal inside a rule any more — in particular <code>.search-hit</code>'s <code>color: oklch(0.15 0 0)</code> is gone, replaced by <code>var(--highlight-fg)</code>.</li>
   <li>A hit inside a <b>URL</b> can be styled independently of a hit inside a <b>title</b>, in both looks, via the URL tokens; when those tokens are absent the URL hit renders identically to a title hit (fallback chain in §4.2).</li>
-  <li>The committed values are the ones signed off from the lab in §5, recorded in the ticket thread before the build PR merges.</li>
-  <li>Hit ink on its hit background meets <b>WCAG AA (4.5:1)</b> in every theme that ships — for title hits and URL hits, both on the popup background and on a selected row. The lab reports each ratio; any pair shipped below 4.5:1 is called out explicitly in the PR with the reason.</li>
+  <li>The committed values are <b>exactly the nine in the §5.1 table</b>, character for character — four of them change what ships, the rest are the current values restated as tokens. No other colour moves.</li>
+  <li>The URL tokens are <b>not</b> declared (§5.1): a URL hit renders identically to a title hit through the fallback chain, in both looks. Removing the URL tokens from the output is not the same as removing the <code>kind</code> plumbing, which still ships.</li>
+  <li>Hit ink on its hit background meets <b>WCAG AA (4.5:1)</b> in every theme that ships — measured at 13.84:1 light and 11.69:1 dark. The one pair below AA (<code>--sub</code> on a selected row) is the known, accepted exception documented in §5.1 and must be repeated in the build PR description.</li>
   <li>Highlighting behaviour is unchanged: same segments matched, same <code>box-decoration-break: clone</code> on multi-line matches, same 2px radius, no layout shift (no padding added to <code>.search-hit</code>).</li>
   <li>Both looks still render correctly with the modern theme setting on <b>System</b>, <b>Light</b> and <b>Dark</b>, and switching theme on the options page updates an open popup live (existing <code>chrome.storage.onChanged</code> path).</li>
   <li><code>npm run check</code> and <code>npm run build</code> pass in <code>bookmark-express-v3/</code>.</li>
@@ -372,8 +415,9 @@
 <ul class="tight">
   <li><b>Out of scope — a shared palette file.</b> Classic keeps its tokens in <code>app.css</code>, modern keeps its <code>oklch</code> palette inside <code>ModernView.svelte</code>. Merging the two into one theme module is a worthwhile cleanup and a separate ticket.</li>
   <li><b>Out of scope — a user-facing setting</b> for highlight color. These stay build-time tokens.</li>
-  <li><b>Open — does classic get a dark variant?</b> Adding <code>@media (prefers-color-scheme: dark)</code> overrides for the classic tokens in <code>app.css</code> is a few lines and fixes <code>yellow</code> glaring in a dark UA, but classic has never been theme-aware and does not read the <code>theme</code> setting. The lab renders classic on a light ground only. <b>Recommendation:</b> keep classic single-scheme in this ticket and pick values that survive a light ground; file the dark variant separately if it bothers you.</li>
-  <li><b>Open — should the selected-row color change at all?</b> The ticket says "highlight colors for bookmark items and url", which reads as the hit swatches. The selected-row tokens are exposed in the lab anyway because hits are drawn on top of them and the pairing has to be judged together; leave them at today's values if only the hit colors should move.</li>
+  <li><b>Resolved — classic keeps today's colors and stays single-scheme.</b> Its values are unchanged in §5.1; it gains only <code>--search-hit-fg: inherit</code>, which restates the current behaviour as a token. A dark variant for classic, and the gray-on-yellow URL hit it would fix (3.68:1 today), are <b>not</b> addressed here — worth a follow-up ticket.</li>
+  <li><b>Resolved — the selected-row colors do move.</b> Both modern greens were retuned along with the hit swatches, since the two are judged as a pair. This is the source of the accepted contrast exception in §5.1.</li>
+  <li><b>Follow-up candidate — <code>--sub</code> on a selected row.</b> A dedicated ink for secondary metadata on the selected row would clear AA in both themes without touching the greens just agreed. Out of scope here; see §5.1.</li>
 </ul>
 
 <h2>9. Definition of done for this refinement</h2>
@@ -382,12 +426,13 @@
   <li>✅ The concrete defects are named, including the ones the ticket title does not mention (§3).</li>
   <li>✅ A token model and the exact component edits are specified, with fallbacks so the URL split is additive (§4).</li>
   <li>✅ An interactive lab lets the values be chosen and exported before any code is written (§5).</li>
-  <li>✅ Acceptance criteria, files touched, and open questions are recorded (§6–§8).</li>
-  <li>No app or source changes are made by this document — the values come back from the lab first.</li>
+  <li>✅ The chosen values are signed off and recorded verbatim, with contrast and sRGB-gamut verification and one explicitly accepted exception (§5.1).</li>
+  <li>✅ Acceptance criteria, files touched, and resolved/open questions are recorded (§6–§8).</li>
+  <li>No app or source changes are made by this document — the build ticket applies §5.1.</li>
 </ul>
 
 <footer>
-  BMX-14 · refinement phase · spec. Target: <code>bookmark-express-v3</code>. The lab's exported values are the input to the build ticket; nothing is committed to the extension until they are signed off.
+  BMX-14 · refinement phase · spec. Target: <code>bookmark-express-v3</code>. Values signed off 2026-07-27 and recorded in §5.1; the build ticket applies them verbatim. No extension code is changed by this document.
 </footer>
 
 <script>
@@ -546,24 +591,42 @@
         },
     ]
 
-    // Starting points. "Today" is the shipped state; the rest are opinions to
-    // react to, not proposals — the point is to have something to drag from.
+    // "Today" is the shipped state; "Signed off" is the decision recorded in
+    // §5.1 and is what the lab loads with. The rest are opinions to react to,
+    // kept so the values can be re-opened if the decision is revisited.
     const PRESETS = {
+        'Signed off': {
+            split: false,
+            values: {
+                modernLight: { hitBg: 'oklch(0.883 0.181 94.5)', hitFg: 'oklch(0.15 0 0)', urlBg: 'oklch(0.883 0.181 94.5)', urlFg: 'oklch(0.15 0 0)', sel: 'oklch(0.831 0.158 144)' },
+                modernDark:  { hitBg: 'oklch(0.831 0.168 93.7)', hitFg: 'oklch(0.15 0 0)', urlBg: 'oklch(0.831 0.168 93.7)', urlFg: 'oklch(0.15 0 0)', sel: 'oklch(0.419 0.097 144.3)' },
+                classic:     { hitBg: 'yellow', hitFg: 'inherit', urlBg: 'yellow', urlFg: 'inherit', sel: '#c2ffba' },
+            },
+        },
         Today: null,
         'Softer amber': {
-            modernLight: { hitBg: 'oklch(0.89 0.11 88)', hitFg: 'oklch(0.28 0.04 88)', urlBg: 'oklch(0.93 0.06 88)', urlFg: 'oklch(0.35 0.03 88)', sel: 'oklch(0.94 0.03 145)' },
-            modernDark:  { hitBg: 'oklch(0.72 0.14 88)', hitFg: 'oklch(0.2 0.03 88)',  urlBg: 'oklch(0.55 0.09 88)', urlFg: 'oklch(0.96 0.01 88)', sel: 'oklch(0.34 0.04 145)' },
-            classic:     { hitBg: '#ffe680', hitFg: '#3a2c00', urlBg: '#fff2bf', urlFg: '#4a3b12', sel: '#d8f5d2' },
+            split: true,
+            values: {
+                modernLight: { hitBg: 'oklch(0.89 0.11 88)', hitFg: 'oklch(0.28 0.04 88)', urlBg: 'oklch(0.93 0.06 88)', urlFg: 'oklch(0.35 0.03 88)', sel: 'oklch(0.94 0.03 145)' },
+                modernDark:  { hitBg: 'oklch(0.72 0.14 88)', hitFg: 'oklch(0.2 0.03 88)',  urlBg: 'oklch(0.55 0.09 88)', urlFg: 'oklch(0.96 0.01 88)', sel: 'oklch(0.34 0.04 145)' },
+                classic:     { hitBg: '#ffe680', hitFg: '#3a2c00', urlBg: '#fff2bf', urlFg: '#4a3b12', sel: '#d8f5d2' },
+            },
         },
         'Cool accent': {
-            modernLight: { hitBg: 'oklch(0.86 0.09 240)', hitFg: 'oklch(0.25 0.05 240)', urlBg: 'oklch(0.92 0.05 240)', urlFg: 'oklch(0.33 0.04 240)', sel: 'oklch(0.95 0.02 240)' },
-            modernDark:  { hitBg: 'oklch(0.62 0.14 240)', hitFg: 'oklch(0.98 0.01 240)', urlBg: 'oklch(0.45 0.09 240)', urlFg: 'oklch(0.95 0.01 240)', sel: 'oklch(0.32 0.04 240)' },
-            classic:     { hitBg: '#bcd9ff', hitFg: '#10305c', urlBg: '#dcebff', urlFg: '#1d3f6b', sel: '#e6eefc' },
+            split: true,
+            values: {
+                modernLight: { hitBg: 'oklch(0.86 0.09 240)', hitFg: 'oklch(0.25 0.05 240)', urlBg: 'oklch(0.92 0.05 240)', urlFg: 'oklch(0.33 0.04 240)', sel: 'oklch(0.95 0.02 240)' },
+                modernDark:  { hitBg: 'oklch(0.62 0.14 240)', hitFg: 'oklch(0.98 0.01 240)', urlBg: 'oklch(0.45 0.09 240)', urlFg: 'oklch(0.95 0.01 240)', sel: 'oklch(0.32 0.04 240)' },
+                classic:     { hitBg: '#bcd9ff', hitFg: '#10305c', urlBg: '#dcebff', urlFg: '#1d3f6b', sel: '#e6eefc' },
+            },
         },
         'Low-key': {
-            modernLight: { hitBg: 'oklch(0.9 0.03 95)', hitFg: 'oklch(0.25 0.01 95)', urlBg: 'oklch(0.94 0.02 95)', urlFg: 'oklch(0.4 0.01 95)', sel: 'oklch(0.96 0.01 250)' },
-            modernDark:  { hitBg: 'oklch(0.5 0.04 95)', hitFg: 'oklch(0.97 0.005 95)', urlBg: 'oklch(0.4 0.03 95)', urlFg: 'oklch(0.92 0.005 95)', sel: 'oklch(0.3 0.012 250)' },
-            classic:     { hitBg: '#efe6c2', hitFg: '#2f2a14', urlBg: '#f4efdc', urlFg: '#413a20', sel: '#eef1ee' },
+            split: true,
+            values: {
+                modernLight: { hitBg: 'oklch(0.9 0.03 95)', hitFg: 'oklch(0.25 0.01 95)', urlBg: 'oklch(0.94 0.02 95)', urlFg: 'oklch(0.4 0.01 95)', sel: 'oklch(0.96 0.01 250)' },
+                modernDark:  { hitBg: 'oklch(0.5 0.04 95)', hitFg: 'oklch(0.97 0.005 95)', urlBg: 'oklch(0.4 0.03 95)', urlFg: 'oklch(0.92 0.005 95)', sel: 'oklch(0.3 0.012 250)' },
+                classic:     { hitBg: '#efe6c2', hitFg: '#2f2a14', urlBg: '#f4efdc', urlFg: '#413a20', sel: '#eef1ee' },
+            },
         },
     }
 
@@ -952,23 +1015,25 @@
 
     document.getElementById('q').addEventListener('input', (e) => { query = e.target.value; render() })
 
+    function applyPreset(name) {
+        const preset = PRESETS[name]
+        for (const g of GROUPS) {
+            for (const t of g.tokens) {
+                const value = preset ? preset.values[g.key][t.key] : t.current
+                inherit[g.key][t.key] = Boolean(t.inheritsAs) && value === 'inherit'
+                state[g.key][t.key] = value
+            }
+            split[g.key] = preset ? preset.split : false
+            document.getElementById(`split-${g.key}`).checked = split[g.key]
+        }
+        render()
+    }
+
     const presetBar = document.getElementById('presets')
     for (const name of Object.keys(PRESETS)) {
         const btn = el('button', null, name)
         btn.type = 'button'
-        btn.addEventListener('click', () => {
-            const preset = PRESETS[name]
-            for (const g of GROUPS) {
-                for (const t of g.tokens) {
-                    state[g.key][t.key] = preset ? preset[g.key][t.key] : t.current
-                    if (t.inheritsAs) inherit[g.key][t.key] = !preset
-                }
-                if (preset) split[g.key] = true
-                else split[g.key] = false
-                document.getElementById(`split-${g.key}`).checked = split[g.key]
-            }
-            render()
-        })
+        btn.addEventListener('click', () => applyPreset(name))
         presetBar.appendChild(btn)
     }
 
@@ -993,6 +1058,8 @@
     document.getElementById('copy-css').addEventListener('click', (e) => copy(buildCss(), e.currentTarget))
     document.getElementById('copy-values').addEventListener('click', (e) => copy(buildValues(), e.currentTarget))
 
-    render()
+    // Open on the signed-off decision, not on the shipped values, so the lab
+    // shows the agreed result and the readout below lists what it changes.
+    applyPreset('Signed off')
 })()
 </script>
