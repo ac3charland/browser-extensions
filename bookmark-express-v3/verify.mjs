@@ -240,6 +240,40 @@ check(
     'restoring the original search must not resurrect the "URL copied" overlay',
 )
 
+// --- Scenario: footer hints are individually toggleable ----------------------
+// Disabling some hints drops exactly those chips and keeps the rest in order.
+const someHints = await openPopup({
+    settings: { footerHints: { navigate: false, enter: true, shiftEnter: false, incognito: true, copyUrl: false, close: true } },
+})
+const someKeys = await someHints.page.locator('.footer .kbd').allInnerTexts()
+check(
+    JSON.stringify(someKeys) === JSON.stringify(['↵', '⌘⇧↵', 'Esc']),
+    `only the enabled hints should render, in footer order, got ${JSON.stringify(someKeys)}`,
+)
+
+// With every hint off there is nothing to show, so the footer itself is gone.
+const noHints = await openPopup({
+    settings: { footerHints: { navigate: false, enter: false, shiftEnter: false, incognito: false, copyUrl: false, close: false } },
+})
+check((await noHints.page.locator('.footer').count()) === 0, 'footer should be hidden when no hints are enabled')
+// Hiding the footer must not disable the shortcut it advertised: Cmd+C still copies.
+await noHints.page.fill('.search-bar', 'github')
+await noHints.page.waitForSelector('.row', { timeout: 5000 })
+const noHintsUrl = await noHints.page.locator('.row.selected .url').innerText()
+await noHints.page.locator('.search-bar').press('Meta+c')
+const noHintsClip = await noHints.page.evaluate(() => window.__clipboard)
+check(
+    noHintsClip.length === 1 && noHintsClip[0] === noHintsUrl,
+    `Cmd+C should still copy with the footer hidden, got ${JSON.stringify(noHintsClip)}`,
+)
+
+// A settings object saved before footerHints existed still gets every hint.
+const legacyHints = await openPopup({ settings: { theme: 'dark' } })
+check(
+    (await legacyHints.page.locator('.footer .kbd').count()) === 6,
+    'settings stored without footerHints should fall back to all six hints',
+)
+
 // A pinned theme setting overrides the system scheme.
 const dark = await openPopup({ settings: { theme: 'dark' } })
 await dark.page.waitForSelector('.search-bar', { timeout: 5000 })
@@ -356,15 +390,86 @@ check(stored?.invertTabBehavior === true, `should persist invertTabBehavior, got
 check(stored?.theme === 'dark', `should persist theme, got ${JSON.stringify(stored)}`)
 check(stored?.useClassic === true, `should persist useClassic, got ${JSON.stringify(stored)}`)
 
-// With the classic look on, the theme selector is disabled (it only affects modern).
+// With the classic look on, the theme selector and the footer-hint checkboxes are
+// disabled (both only affect the modern look).
 check(
     (await opt.page.getByRole('radio', { name: 'Dark' }).isDisabled()) === true,
     'theme selector should be disabled while classic look is on',
 )
+check(
+    (await opt.page.locator('.row').nth(3).locator('input[type=checkbox]').first().isDisabled()) === true,
+    'footer-hint checkboxes should be disabled while classic look is on',
+)
+
+// --- Scenario: options page drives the footer hints --------------------------
+const hintOpt = await openPopup({}, 'options.html', '.card')
+const hintsRow = hintOpt.page.locator('.row').nth(3)
+const allBox = hintsRow.locator('input[type=checkbox]').first()
+const hintBoxes = hintsRow.locator('.hint-list input[type=checkbox]')
+const hintsDesc = () => hintsRow.locator('.desc').innerText()
+const storedHints = () =>
+    hintOpt.page.evaluate(async () => (await chrome.storage.local.get('settings')).settings?.footerHints)
+
+// One checkbox per footer hint, all on by default, with the check-all box checked
+// and not indeterminate.
+check((await hintBoxes.count()) === 6, `expected 6 per-hint checkboxes, got ${await hintBoxes.count()}`)
+check((await allBox.isChecked()) === true, 'check-all should start checked')
+check(
+    (await allBox.evaluate((el) => el.indeterminate)) === false,
+    'check-all should not be indeterminate while every hint is on',
+)
+const hintLabels = await hintsRow.locator('.hint-list .check-label').allInnerTexts()
+check(
+    JSON.stringify(hintLabels.map((l) => l.trim())) ===
+        JSON.stringify(['↑↓ Navigate', '↵ New tab', '⇧↵ Same tab', '⌘⇧↵ Incognito', '⌘C Copy URL', 'Esc Close']),
+    `hint labels should name each shortcut, got ${JSON.stringify(hintLabels)}`,
+)
+
+// Unchecking one hint persists just that hint and leaves check-all indeterminate.
+await hintBoxes.nth(4).uncheck()
+check(
+    (await storedHints())?.copyUrl === false && (await storedHints())?.navigate === true,
+    `unchecking one hint should persist only it, got ${JSON.stringify(await storedHints())}`,
+)
+check((await allBox.isChecked()) === false, 'check-all should clear once a hint is off')
+check(
+    (await allBox.evaluate((el) => el.indeterminate)) === true,
+    'check-all should be indeterminate while only some hints are on',
+)
+
+// Check-all turns every hint back on...
+await allBox.check()
+check(
+    Object.values(await storedHints()).every(Boolean),
+    `check-all should enable every hint, got ${JSON.stringify(await storedHints())}`,
+)
+check((await hintBoxes.nth(4).isChecked()) === true, 'check-all should re-check the individual boxes')
+
+// ...and unchecking it turns every hint off, which the description calls out.
+await allBox.uncheck()
+check(
+    Object.values(await storedHints()).every((v) => v === false),
+    `uncheck-all should disable every hint, got ${JSON.stringify(await storedHints())}`,
+)
+check((await hintBoxes.nth(0).isChecked()) === false, 'uncheck-all should clear the individual boxes')
+check(
+    (await hintsDesc()).trim() === 'No hints are enabled, so the popup hides its footer entirely.',
+    `description should explain the hidden footer, got "${await hintsDesc()}"`,
+)
 
 // Only fail on real JS exceptions (pageerror). Resource 404s such as the mock's
 // favicon endpoint are expected noise in this harness, not logic errors.
-const errors = [...mod.logs, ...dark.logs, ...cls.logs, ...inv.logs, ...opt.logs].filter((l) => l.includes('pageerror'))
+const errors = [
+    ...mod.logs,
+    ...someHints.logs,
+    ...noHints.logs,
+    ...legacyHints.logs,
+    ...dark.logs,
+    ...cls.logs,
+    ...inv.logs,
+    ...opt.logs,
+    ...hintOpt.logs,
+].filter((l) => l.includes('pageerror'))
 check(errors.length === 0, `page errors: ${errors.join(' | ')}`)
 
 await browser.close()

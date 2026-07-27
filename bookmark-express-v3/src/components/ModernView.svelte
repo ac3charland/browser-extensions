@@ -1,7 +1,14 @@
 <script lang="ts">
     import { onMount } from 'svelte'
     import type { SearchResult } from '../lib/types'
-    import { shouldOpenInNewTab, openMode, type Theme, type OpenMode } from '../lib/settings'
+    import {
+        openMode,
+        hintLabel,
+        visibleHints,
+        type FooterHints,
+        type Theme,
+        type OpenMode,
+    } from '../lib/settings'
     import { highlight } from '../lib/highlight'
     import Favicon from './Favicon.svelte'
 
@@ -13,6 +20,7 @@
         copiedSeq: number
         invert: boolean
         theme: Theme
+        footerHints: FooterHints
         oninput: (value: string) => void
         onkeydown: (event: KeyboardEvent) => void
         onhover: (index: number) => void
@@ -27,6 +35,7 @@
         copiedSeq,
         invert,
         theme,
+        footerHints,
         oninput,
         onkeydown,
         onhover,
@@ -63,10 +72,9 @@
         rows[selectedIndex]?.scrollIntoView({ block: 'nearest' })
     })
 
-    // Footer hints reflect the current tab-behavior setting: one label for plain
-    // Enter, one for Shift+Enter, each showing which tab it targets.
-    let enterLabel = $derived(shouldOpenInNewTab(false, invert) ? 'New tab' : 'Same tab')
-    let shiftEnterLabel = $derived(shouldOpenInNewTab(true, invert) ? 'New tab' : 'Same tab')
+    // Only the hints the user left enabled on the options page, in footer order.
+    // Empty means the whole footer is hidden (see the markup below).
+    let hints = $derived(visibleHints(footerHints))
 
     // Folder path rendered as a breadcrumb ("Bookmarks Bar › Dev"). The stored
     // path joins segments with " / " (see bookmarks.ts buildPaths).
@@ -142,14 +150,15 @@
         </div>
     {/if}
 
-    <div class="footer">
-        <span class="hint"><span class="kbd">↑↓</span> Navigate</span>
-        <span class="hint"><span class="kbd">↵</span> {enterLabel}</span>
-        <span class="hint"><span class="kbd">⇧↵</span> {shiftEnterLabel}</span>
-        <span class="hint"><span class="kbd">⌘⇧↵</span> Incognito</span>
-        <span class="hint"><span class="kbd">⌘C</span> Copy URL</span>
-        <span class="hint"><span class="kbd">Esc</span> Close</span>
-    </div>
+    <!-- With every hint turned off there is nothing to separate, so the footer
+         (and its top border) goes away rather than leaving an empty strip. -->
+    {#if hints.length > 0}
+        <div class="footer">
+            {#each hints as hint (hint.id)}
+                <span class="hint"><span class="kbd">{hint.key}</span> {hintLabel(hint, invert)}</span>
+            {/each}
+        </div>
+    {/if}
 </div>
 
 <style>

@@ -1,6 +1,18 @@
 <script lang="ts">
     import { onMount } from 'svelte'
-    import { loadSettings, saveSettings, DEFAULT_SETTINGS, type Settings, type Theme } from './lib/settings'
+    import {
+        loadSettings,
+        saveSettings,
+        allHintsEnabled,
+        anyHintsEnabled,
+        hintLabel,
+        setAllHints,
+        DEFAULT_SETTINGS,
+        FOOTER_HINTS,
+        type HintId,
+        type Settings,
+        type Theme,
+    } from './lib/settings'
 
     let ready = $state(false)
     let settings = $state<Settings>(DEFAULT_SETTINGS)
@@ -28,6 +40,24 @@
 
     async function onToggleClassic(event: Event) {
         settings.useClassic = (event.target as HTMLInputElement).checked
+        await saveSettings(settings)
+    }
+
+    // The check-all box reflects the individual ones: checked only when every
+    // hint is on, indeterminate while some are.
+    let allHints = $derived(allHintsEnabled(settings.footerHints))
+    let someHints = $derived(anyHintsEnabled(settings.footerHints))
+
+    async function onToggleAllHints(event: Event) {
+        settings.footerHints = setAllHints((event.target as HTMLInputElement).checked)
+        await saveSettings(settings)
+    }
+
+    async function onToggleHint(id: HintId, event: Event) {
+        settings.footerHints = {
+            ...settings.footerHints,
+            [id]: (event.target as HTMLInputElement).checked,
+        }
         await saveSettings(settings)
     }
 </script>
@@ -108,6 +138,50 @@
                     </label>
                     <p class="desc">
                         Show the original popup design instead of the modern one.
+                    </p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="label">Footer hints</div>
+                <div class="control">
+                    <div class="hints" class:disabled={settings.useClassic}>
+                        <label class="check">
+                            <input
+                                type="checkbox"
+                                checked={allHints}
+                                indeterminate={someHints && !allHints}
+                                disabled={settings.useClassic}
+                                onchange={onToggleAllHints}
+                            />
+                            <span class="check-label">All hints</span>
+                        </label>
+                        <div class="hint-list">
+                            {#each FOOTER_HINTS as hint (hint.id)}
+                                <label class="check">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.footerHints[hint.id]}
+                                        disabled={settings.useClassic}
+                                        onchange={(event) => onToggleHint(hint.id, event)}
+                                    />
+                                    <span class="check-label">
+                                        <span class="kbd">{hint.key}</span>
+                                        {hintLabel(hint, settings.invertTabBehavior)}
+                                    </span>
+                                </label>
+                            {/each}
+                        </div>
+                    </div>
+                    <p class="desc">
+                        {#if settings.useClassic}
+                            The hint footer only applies to the modern look. Turn off the classic
+                            look to change it.
+                        {:else if !someHints}
+                            No hints are enabled, so the popup hides its footer entirely.
+                        {:else}
+                            Keyboard shortcuts listed along the bottom of the modern popup.
+                        {/if}
                     </p>
                 </div>
             </div>
@@ -210,6 +284,45 @@
     .check-label {
         font-size: 17px;
         color: #c7cede;
+    }
+
+    /* The check-all box sits above its group, with the individual hints indented
+       under it (aligned with the .desc text below). */
+    .hints {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .hint-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-left: 28px;
+    }
+
+    .hints.disabled {
+        opacity: 0.4;
+    }
+
+    .hints.disabled .check,
+    .hints.disabled .check input {
+        cursor: not-allowed;
+    }
+
+    /* Key chip echoing the popup footer's, so a row reads as the hint it toggles. */
+    .kbd {
+        display: inline-block;
+        min-width: 12px;
+        margin-right: 4px;
+        padding: 1px 6px;
+        background: #101624;
+        border: 1px solid #2a3550;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        color: #f2efe6;
     }
 
     .segmented {
