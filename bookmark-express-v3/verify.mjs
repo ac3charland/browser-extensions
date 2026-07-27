@@ -126,7 +126,8 @@ await mod.page.waitForSelector('.row', { timeout: 5000 })
 const rowCount = await mod.page.locator('.row').count()
 const firstTitle = await mod.page.locator('.row').first().locator('.title').innerText()
 const firstCrumb = await mod.page.locator('.row').first().locator('.crumb').innerText()
-const firstUrl = await mod.page.locator('.row').first().locator('.url').innerText()
+// div.url (not plain '.url') to avoid matching the BMX-14 .search-hit.url span nested inside it.
+const firstUrl = await mod.page.locator('.row').first().locator('div.url').innerText()
 const modHighlights = await mod.page.locator('.search-hit').count()
 
 check(rowCount === 2, `expected 2 github results, got ${rowCount}`)
@@ -137,6 +138,41 @@ check(firstUrl.includes('github'), `expected the full URL shown, got "${firstUrl
 
 // Modern chrome: a real search icon and a 4-hint keyboard footer, no in-bar
 // theme toggle (theme is controlled from the options page only).
+// BMX-14: the modern search-hit ink comes from --highlight-fg (a token), not a
+// hardcoded color, and title/URL hits share the same swatch via the fallback
+// chain (no --highlight-url tokens are declared).
+// Chromium's computed style echoes back oklch()/etc. verbatim rather than
+// converting to rgb(), so paint a 1x1 canvas pixel and read it back — that
+// forces a real conversion into 8-bit sRGB, which getImageData always uses.
+async function computedHex(locator, prop) {
+    return locator.evaluate((el, prop) => {
+        const canvas = document.createElement('canvas')
+        canvas.width = canvas.height = 1
+        const ctx = canvas.getContext('2d')
+        ctx.fillStyle = getComputedStyle(el)[prop]
+        ctx.fillRect(0, 0, 1, 1)
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+        return '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')
+    }, prop)
+}
+
+const modTitleHit = mod.page.locator('.title .search-hit').first()
+const modUrlHit = mod.page.locator('.url .search-hit').first()
+check((await modUrlHit.count()) > 0, 'expected at least one URL search-hit')
+check((await modUrlHit.first().evaluate((el) => el.classList.contains('url'))), 'URL hit should carry the .url class')
+const modTitleHitBg = await computedHex(modTitleHit, 'backgroundColor')
+const modTitleHitFg = await computedHex(modTitleHit, 'color')
+const modUrlHitBg = await computedHex(modUrlHit.first(), 'backgroundColor')
+const modUrlHitFg = await computedHex(modUrlHit.first(), 'color')
+check(modTitleHitBg === '#ffd501', `light --highlight should resolve to #ffd501, got ${modTitleHitBg}`)
+check(modTitleHitFg === '#0b0b0b', `light --highlight-fg should resolve to #0b0b0b, got ${modTitleHitFg}`)
+check(
+    modUrlHitBg === modTitleHitBg && modUrlHitFg === modTitleHitFg,
+    'unset --highlight-url tokens should make a URL hit render identically to a title hit',
+)
+const modSelectedBg = await computedHex(mod.page.locator('.row.selected').first(), 'backgroundColor')
+check(modSelectedBg === '#83e283', `light --selected should resolve to #83e283, got ${modSelectedBg}`)
+
 check((await mod.page.locator('.search-wrap svg.search-icon').count()) === 1, 'expected an inline search icon')
 check((await mod.page.locator('.theme-toggle').count()) === 0, 'in-bar theme toggle should be gone')
 check((await mod.page.locator('.footer .kbd').count()) === 5, 'expected 5 footer key hints')
@@ -203,6 +239,14 @@ check(
     'theme:dark setting should force the dark scheme',
 )
 
+// BMX-14: the dark-theme highlight/selection retune.
+await dark.page.fill('.search-bar', 'github')
+await dark.page.waitForSelector('.row', { timeout: 5000 })
+const darkHitBg = await computedHex(dark.page.locator('.search-hit').first(), 'backgroundColor')
+check(darkHitBg === '#ecc411', `dark --highlight should resolve to #ecc411, got ${darkHitBg}`)
+const darkSelectedBg = await computedHex(dark.page.locator('.row.selected').first(), 'backgroundColor')
+check(darkSelectedBg === '#265a28', `dark --selected should resolve to #265a28, got ${darkSelectedBg}`)
+
 // --- Scenario: classic look (opt-in via settings) ----------------------------
 const cls = await openPopup({ settings: { useClassic: true } })
 await cls.page.fill('.search-bar', 'github')
@@ -211,6 +255,20 @@ await cls.page.waitForSelector('li', { timeout: 5000 })
 check((await cls.page.locator('li').count()) === 2, 'expected 2 results in the classic list')
 check((await cls.page.locator('.folder-path').count()) > 0, 'expected classic folder-path rows')
 check((await cls.page.locator('.row').count()) === 0, 'classic look should not render modern rows')
+
+// BMX-14: --search-hit-fg: inherit restates today's classic behavior as a
+// token — a title hit stays link-blue, a URL hit stays gray — and the URL
+// hit still carries the .url class from the new `kind` prop.
+const clsTitleHit = cls.page.locator('.bookmark-link .search-hit').first()
+const clsUrlHit = cls.page.locator('.url .search-hit').first()
+check((await clsUrlHit.count()) > 0, 'expected at least one classic URL search-hit')
+check((await clsUrlHit.first().evaluate((el) => el.classList.contains('url'))), 'classic URL hit should carry the .url class')
+const clsTitleHitFg = await clsTitleHit.evaluate((el) => getComputedStyle(el).color)
+const clsUrlHitFg = await clsUrlHit.first().evaluate((el) => getComputedStyle(el).color)
+check(
+    clsTitleHitFg !== clsUrlHitFg,
+    `classic title/URL hits should keep their distinct inherited inks, both were ${clsTitleHitFg}`,
+)
 
 const clsHint = await cls.page.locator('.hint').innerText()
 check(

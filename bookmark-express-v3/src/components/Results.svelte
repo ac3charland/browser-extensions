@@ -47,7 +47,7 @@
                     </a>
                     <span class="folder-path">{result.path}</span>
                     <span class="url" title={result.url}>
-                        <Highlighted text={result.url} {query} />
+                        <Highlighted text={result.url} {query} kind="url" />
                     </span>
                 </div>
             </li>

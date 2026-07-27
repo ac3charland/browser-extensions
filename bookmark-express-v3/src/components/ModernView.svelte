@@ -80,7 +80,7 @@
 </script>
 
 <!-- prettier-ignore -->
-{#snippet highlighted(text: string)}{#each highlight(text, query) as seg}{#if seg.hit}<span class="search-hit">{seg.text}</span>{:else}{seg.text}{/if}{/each}{/snippet}
+{#snippet highlighted(text: string, kind: 'title' | 'url')}{#each highlight(text, query) as seg}{#if seg.hit}<span class="search-hit" class:url={kind === 'url'}>{seg.text}</span>{:else}{seg.text}{/if}{/each}{/snippet}
 
 <div class="popup">
     <div class="search-wrap">
@@ -125,8 +125,8 @@
                         {#if result.path}
                             <div class="crumb">{breadcrumb(result.path)}</div>
                         {/if}
-                        <div class="title">{@render highlighted(result.title)}</div>
-                        <div class="url">{@render highlighted(result.url)}</div>
+                        <div class="title">{@render highlighted(result.title, 'title')}</div>
+                        <div class="url">{@render highlighted(result.url, 'url')}</div>
                     </div>
                 </a>
             {/each}
@@ -153,8 +153,9 @@
         --sub: oklch(0.66 0.012 250);
         --border: oklch(0.34 0.012 250);
         --hover: oklch(0.3 0.014 250);
-        --selected: oklch(0.36 0.05 145);
-        --highlight: oklch(0.76 0.17 95);
+        --selected: oklch(0.419 0.097 144.3);
+        --highlight: oklch(0.831 0.168 93.7);
+        --highlight-fg: oklch(0.15 0 0);
         /* Favicon tile: a light-gray backing in dark mode keeps dark favicons
            legible; the fallback initial sits on it in a dark ink. */
         --favicon-bg: oklch(0.9 0.005 250);
@@ -168,8 +169,9 @@
         --sub: oklch(0.52 0.01 90);
         --border: oklch(0.9 0.005 90);
         --hover: oklch(0.965 0.004 90);
-        --selected: oklch(0.92 0.05 145);
-        --highlight: oklch(0.86 0.14 95);
+        --selected: oklch(0.831 0.158 144);
+        --highlight: oklch(0.883 0.181 94.5);
+        --highlight-fg: oklch(0.15 0 0);
         /* No tile in light mode (per design feedback); the fallback initial sits
            directly on the popup in a muted ink. */
         --favicon-bg: transparent;
@@ -281,10 +283,14 @@
        across line breaks so multi-line matches render as separate rects. */
     .search-hit {
         background: var(--highlight);
+        color: var(--highlight-fg);
         border-radius: 2px;
         -webkit-box-decoration-break: clone;
         box-decoration-break: clone;
-        color: oklch(0.15 0 0);
+    }
+    .search-hit.url {
+        background: var(--highlight-url, var(--highlight));
+        color: var(--highlight-url-fg, var(--highlight-fg));
     }
 
     .footer {
