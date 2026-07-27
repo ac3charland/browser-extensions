@@ -164,7 +164,7 @@
         --border: oklch(0.34 0.012 250);
         --hover: oklch(0.3 0.014 250);
         --selected: oklch(0.36 0.05 145);
-        --highlight: oklch(0.76 0.17 95);
+        --highlight: oklch(0.831 0.168 93.7);
         /* Favicon tile: a light-gray backing in dark mode keeps dark favicons
            legible; the fallback initial sits on it in a dark ink. */
         --favicon-bg: oklch(0.9 0.005 250);
@@ -179,7 +179,7 @@
         --border: oklch(0.9 0.005 90);
         --hover: oklch(0.965 0.004 90);
         --selected: oklch(0.92 0.05 145);
-        --highlight: oklch(0.86 0.14 95);
+        --highlight: oklch(0.883 0.181 94.5);
         /* No tile in light mode (per design feedback); the fallback initial sits
            directly on the popup in a muted ink. */
         --favicon-bg: transparent;
