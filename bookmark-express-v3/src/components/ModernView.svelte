@@ -9,6 +9,8 @@
         query: string
         results: SearchResult[]
         selectedIndex: number
+        copiedIndex: number
+        copiedSeq: number
         invert: boolean
         theme: Theme
         oninput: (value: string) => void
@@ -21,6 +23,8 @@
         query,
         results,
         selectedIndex,
+        copiedIndex,
+        copiedSeq,
         invert,
         theme,
         oninput,
@@ -128,6 +132,11 @@
                         <div class="title">{@render highlighted(result.title)}</div>
                         <div class="url">{@render highlighted(result.url)}</div>
                     </div>
+                    {#if copiedIndex === i}
+                        {#key copiedSeq}
+                            <span class="copied-flash">URL copied</span>
+                        {/key}
+                    {/if}
                 </a>
             {/each}
         </div>
@@ -138,6 +147,7 @@
         <span class="hint"><span class="kbd">↵</span> {enterLabel}</span>
         <span class="hint"><span class="kbd">⇧↵</span> {shiftEnterLabel}</span>
         <span class="hint"><span class="kbd">⌘⇧↵</span> Incognito</span>
+        <span class="hint"><span class="kbd">⌘C</span> Copy URL</span>
         <span class="hint"><span class="kbd">Esc</span> Close</span>
     </div>
 </div>
@@ -236,6 +246,7 @@
     }
 
     .row {
+        position: relative;
         display: flex;
         gap: 12px;
         align-items: flex-start;
@@ -248,6 +259,41 @@
 
     .row.selected {
         background: var(--selected);
+    }
+
+    /* "URL copied" badge that flashes over the row when Cmd/Ctrl+C copies its URL,
+       then fades out on its own. Re-keyed on each copy (see copiedSeq) so the
+       animation replays even when the same row is copied twice. */
+    .copied-flash {
+        position: absolute;
+        top: 50%;
+        right: 14px;
+        transform: translateY(-50%);
+        padding: 3px 9px;
+        border-radius: 6px;
+        background: var(--highlight);
+        color: oklch(0.15 0 0);
+        font-size: 11px;
+        font-weight: 600;
+        pointer-events: none;
+        animation: copied-fade 1.2s ease-out forwards;
+    }
+
+    @keyframes copied-fade {
+        0% {
+            opacity: 0;
+            transform: translateY(-50%) scale(0.9);
+        }
+        12% {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
+        60% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
     }
 
     .content {

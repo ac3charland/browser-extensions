@@ -46,6 +46,15 @@ the modern popup's keyboard-hint footer. It relies on `chrome.windows.create`,
 so the extension must be granted **Allow in incognito** on `chrome://extensions`
 for the window to appear.
 
+## Copying a URL
+
+**Cmd+C** (Ctrl+C on Windows/Linux) copies the highlighted bookmark's URL to the
+clipboard. A "URL copied" badge flashes on that row and fades out. The shortcut
+is a fixed keystroke (shown in the modern popup's footer and the classic hint)
+and, like the tab shortcuts, works under both looks via the shared controller.
+It only fires while a result is highlighted, so with no results Cmd+C still
+copies any text selected in the search bar as usual.
+
 ## Appearance
 
 The popup ships with a modern, command-palette-style look (rounded container,
