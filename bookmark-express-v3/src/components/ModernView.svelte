@@ -153,7 +153,7 @@
         --sub: oklch(0.66 0.012 250);
         --border: oklch(0.34 0.012 250);
         --hover: oklch(0.3 0.014 250);
-        --selected: oklch(0.419 0.097 144.3);
+        --selected: oklch(0.36 0.05 145);
         --highlight: oklch(0.831 0.168 93.7);
         --highlight-fg: oklch(0.15 0 0);
         /* Favicon tile: a light-gray backing in dark mode keeps dark favicons
@@ -169,7 +169,7 @@
         --sub: oklch(0.52 0.01 90);
         --border: oklch(0.9 0.005 90);
         --hover: oklch(0.965 0.004 90);
-        --selected: oklch(0.831 0.158 144);
+        --selected: oklch(0.92 0.05 145);
         --highlight: oklch(0.883 0.181 94.5);
         --highlight-fg: oklch(0.15 0 0);
         /* No tile in light mode (per design feedback); the fallback initial sits

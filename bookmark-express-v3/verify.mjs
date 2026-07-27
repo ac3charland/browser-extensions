@@ -170,8 +170,9 @@ check(
     modUrlHitBg === modTitleHitBg && modUrlHitFg === modTitleHitFg,
     'unset --highlight-url tokens should make a URL hit render identically to a title hit',
 )
+// --selected is untouched by BMX-14 (the retune was reverted per review feedback).
 const modSelectedBg = await computedHex(mod.page.locator('.row.selected').first(), 'backgroundColor')
-check(modSelectedBg === '#83e283', `light --selected should resolve to #83e283, got ${modSelectedBg}`)
+check(modSelectedBg === '#d1eed1', `light --selected should stay rgb unchanged at #d1eed1, got ${modSelectedBg}`)
 
 check((await mod.page.locator('.search-wrap svg.search-icon').count()) === 1, 'expected an inline search icon')
 check((await mod.page.locator('.theme-toggle').count()) === 0, 'in-bar theme toggle should be gone')
@@ -239,13 +240,13 @@ check(
     'theme:dark setting should force the dark scheme',
 )
 
-// BMX-14: the dark-theme highlight/selection retune.
+// BMX-14: the dark-theme highlight retune. --selected is untouched (reverted per review feedback).
 await dark.page.fill('.search-bar', 'github')
 await dark.page.waitForSelector('.row', { timeout: 5000 })
 const darkHitBg = await computedHex(dark.page.locator('.search-hit').first(), 'backgroundColor')
 check(darkHitBg === '#ecc411', `dark --highlight should resolve to #ecc411, got ${darkHitBg}`)
 const darkSelectedBg = await computedHex(dark.page.locator('.row.selected').first(), 'backgroundColor')
-check(darkSelectedBg === '#265a28', `dark --selected should resolve to #265a28, got ${darkSelectedBg}`)
+check(darkSelectedBg === '#2c442d', `dark --selected should stay unchanged at #2c442d, got ${darkSelectedBg}`)
 
 // --- Scenario: classic look (opt-in via settings) ----------------------------
 const cls = await openPopup({ settings: { useClassic: true } })
