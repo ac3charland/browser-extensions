@@ -66,6 +66,12 @@ settings:
   default), **Light**, or **Dark**. Applies to the modern look only, so it's
   disabled while the classic look is on.
 - **Use classic Bookmark Express** — opt back into the original plain-list look.
+- **Footer hints** — a checkbox per hint in the modern popup's keyboard footer
+  (Navigate, Enter, Shift+Enter, Incognito, Copy URL, Close), plus an **All
+  hints** box that checks or unchecks every one at once. Unchecking a hint only
+  hides it; the shortcut still works. With every hint off the popup drops the
+  footer entirely rather than leaving an empty strip. Like Theme, these apply to
+  the modern look only and are disabled while the classic look is on.
 
 Both looks are driven by the same search/keyboard/tab-opening controller
 (`App.svelte`); only the presentation layer differs (`components/ModernView.svelte`

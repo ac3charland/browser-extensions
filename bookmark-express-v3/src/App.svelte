@@ -4,6 +4,7 @@
     import type { SearchResult } from './lib/types'
     import {
         loadSettings,
+        mergeSettings,
         openMode,
         shiftEnterHint,
         DEFAULT_SETTINGS,
@@ -48,7 +49,9 @@
         // unavailable in some test harnesses, so guard the subscription.
         chrome.storage?.onChanged?.addListener((changes, area) => {
             if (area === 'local' && changes.settings) {
-                settings = { ...settings, ...changes.settings.newValue }
+                // Merge through the same path as the initial load so a newValue
+                // written by an older build still has an entry for every hint.
+                settings = mergeSettings({ ...settings, ...changes.settings.newValue })
             }
         })
     })
@@ -166,6 +169,7 @@
             {copiedSeq}
             invert={settings.invertTabBehavior}
             theme={settings.theme}
+            footerHints={settings.footerHints}
             oninput={handleInput}
             onkeydown={handleKeydown}
             onhover={handleHover}
